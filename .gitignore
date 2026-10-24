@@ -1,0 +1,14 @@
+node_modules/
+test-results/
+coverage/
+artifacts/
+*.tgz
+*.log
+.env
+.env.*
+!.env.example
+.dsh/
+.DS_Store
+policy.json
+policy.json.bak
+translations.json

@@ -1,0 +1,88 @@
+{
+  "name": "dsh-plugin-workspace-capabilities",
+  "version": "1.2.0",
+  "description": "DSH Capability Desk: workspace Skill/MCP controls and model-powered translations for DeepSeek Harness",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "*.js",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test --test-isolation=none tests/*.test.js",
+    "test:browser": "node tests/browser-layout.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "dependencies": {
+    "smol-toml": "1.9.1",
+    "yaml": "^2.8.1"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/schemastery": "3.18.5",
+    "@deepseek-ai/dsh-skill": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-scope": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.3"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings-general",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-model-selection"
+      ]
+    }
+  },
+  "license": "MIT",
+  "author": {
+    "name": "osiqwq",
+    "email": "pc3456789a@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ousiqwq/dsh-capability-desk.git"
+  },
+  "homepage": "https://github.com/ousiqwq/dsh-capability-desk#readme",
+  "bugs": {
+    "url": "https://github.com/ousiqwq/dsh-capability-desk/issues"
+  },
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "plugin",
+    "skills",
+    "mcp",
+    "workspace",
+    "translation"
+  ],
+  "engines": {
+    "node": ">=26"
+  },
+  "packageManager": "npm@11.20.0",
+  "devDependencies": {
+    "@deepseek-ai/cordis": "4.0.5",
+    "@deepseek-ai/schemastery": "3.18.5",
+    "@deepseek-ai/dsh-skill": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-scope": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-system-prompt": "0.2.1-rc.3",
+    "@deepseek-ai/dsh-mcp-resources": "0.2.1-rc.3",
+    "playwright": "1.64.1"
+  }
+}
