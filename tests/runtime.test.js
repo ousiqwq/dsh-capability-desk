@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Context } from '@deepseek-ai/cordis';
+import { Context, symbols } from '@deepseek-ai/cordis';
 import SkillRegistry from '@deepseek-ai/dsh-skill';
 import ToolRuntime, { defineTool } from '@deepseek-ai/dsh-tools';
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt';
@@ -9,6 +9,8 @@ import { createScope } from '@deepseek-ai/dsh-scope';
 import { createRuntime } from '../runtime.js';
 import { emptyPolicy } from '../policy.js';
 import { Discovery } from '../discovery.js';
+import { createApi } from '../http-api.js';
+import { installLegacySkillPolicy } from './legacy-skill-policy.js';
 
 export async function fixture(t) {
   const ctx = new Context();
@@ -26,8 +28,88 @@ export async function fixture(t) {
   };
   let id = 0;
   const execute = (name, args = {}, agent) => ctx.tools.execute({ name, arguments: args, agent, signal: new AbortController().signal, callId: 'test-' + ++id });
-  return { ctx, store, discovery, runtime, plugin, agent, execute };
+  return { ctx, store, discovery, get runtime() { return runtime; }, plugin, agent, execute };
 }
+test('unloading restores raw Skill methods and disabled bodies without leaving policy wrappers', async t => {
+  const f = await fixture(t);
+  f.ctx.skills.register({ name: 'disabled-example', description: 'Disabled', content: 'BODY', source: 'test' });
+  assert.equal((await f.ctx.skills.snapshot()).skills.length, 0);
+  assert.equal(await f.ctx.skills.get('disabled-example'), undefined);
+  await f.plugin.dispose();
+  assert.equal((await f.ctx.skills.snapshot()).skills.length, 1, 'An unloaded policy must not hide the native catalog');
+  assert.equal((await f.ctx.skills.get('disabled-example')).content, 'BODY');
+  const raw = f.ctx.skills[symbols.original];
+  assert.equal(Object.hasOwn(raw, 'snapshot'), false, 'Restore the original prototype method descriptor');
+  assert.equal(Object.hasOwn(raw, 'get'), false);
+});
+test('live upgrade removes frozen v1.2.1 policy wrappers without reviving disabled Skills', async t => {
+  const f = await fixture(t);
+  await f.plugin.dispose();
+  f.ctx.skills.register({ name: 'legacy-hidden', description: 'Hidden by the old policy', content: 'BODY', source: 'test' });
+  const oldStore = { state: emptyPolicy() };
+  const legacy = f.ctx.plugin({ name: 'frozen-legacy-policy', inject: ['skills'], apply(child) { installLegacySkillPolicy(child, oldStore); } });
+  await legacy.await(); await legacy.dispose();
+  assert.equal((await f.ctx.skills.snapshot()).skills.length, 0, 'Reproduce the legacy wrapper leak before upgrading');
+  let current;
+  const upgrade = f.ctx.plugin({ name: 'upgraded-policy', inject: ['skills', 'tools', 'agents'], apply(child) { current = createRuntime(child, f.store, f.discovery); } });
+  await upgrade.await();
+  assert.deepEqual((await current.originalSnapshot()).skills.map(item => item.name), ['legacy-hidden']);
+  assert.equal((await f.ctx.skills.list()).length, 0, 'Recover the catalog without enabling disabled Skills');
+  assert.equal(await f.ctx.skills.get('legacy-hidden'), undefined);
+  f.store.state.global.skills['legacy-hidden'] = true;
+  assert.equal((await f.ctx.skills.get('legacy-hidden')).content, 'BODY', 'Current policy wins over the stale legacy store');
+  await upgrade.dispose();
+  assert.equal(Object.hasOwn(f.ctx.skills[symbols.original], 'snapshot'), false);
+  assert.equal((await f.ctx.skills.snapshot()).skills.length, 1);
+});
+test('policy teardown preserves unrelated Skill hooks and their original descriptors', async t => {
+  const f = await fixture(t);
+  await f.plugin.dispose();
+  const raw = f.ctx.skills[symbols.original], native = raw.snapshot;
+  const custom = async function (options) { return { ...await native.call(this, options), customHook: true }; };
+  const descriptor = { value: custom, writable: true, enumerable: false, configurable: true };
+  Object.defineProperty(raw, 'snapshot', descriptor);
+  let current;
+  const owner = f.ctx.plugin({ name: 'policy-with-other-hook', inject: ['skills', 'tools', 'agents'], apply(child) { current = createRuntime(child, f.store, f.discovery); } });
+  await owner.await();
+  assert.equal((await current.originalSnapshot()).customHook, true);
+  await owner.dispose();
+  assert.deepEqual(Object.getOwnPropertyDescriptor(raw, 'snapshot'), descriptor);
+});
+test('repeated hot reloads preserve disabled Skill and MCP management rows and current policy enforcement', async t => {
+  const f = await fixture(t);
+  for (const name of ['enabled-example', 'disabled-example']) f.ctx.skills.register({ name, description: name, content: name, source: 'test' });
+  f.store.state.global.skills['enabled-example'] = true;
+  let calls = 0;
+  for (const name of ['enabled', 'disabled']) {
+    const id = 'native:' + name;
+    f.discovery.rows.set(id, { id, name, namespace: name, native: true, workspace: '', source: 'native' });
+    f.ctx.tools.register(defineTool({ name: 'mcp__' + name + '__ping', description: name, parameters: {},
+      output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }] },
+      execute: async () => { calls++; return true; } }));
+  }
+  f.store.state.global.mcp['native:enabled'] = true;
+  for (let round = 0; round < 4; round++) {
+    const api = createApi({}, f.store, f.discovery, f.runtime);
+    const view = await api.view();
+    assert.deepEqual(view.skills.map(item => item.name), ['disabled-example', 'enabled-example'], 'Disabled Skills must remain manageable after reload ' + round);
+    assert.deepEqual(view.skills.map(item => item.enabled), [false, true]);
+    assert.equal(view.mcp.length, 2, 'Disabled MCP must remain manageable');
+    assert.equal(view.mcp.find(item => item.name === 'disabled').enabled, false);
+    assert.deepEqual((await f.ctx.skills.list()).map(item => item.name), ['enabled-example']);
+    assert.equal(await f.ctx.skills.get('disabled-example'), undefined);
+    const before = calls;
+    assert.equal((await f.execute('mcp__enabled__ping')).isError, false);
+    assert.equal((await f.execute('mcp__disabled__ping')).isError, true);
+    assert.equal(calls, before + 1);
+    await f.plugin.restart();
+  }
+  f.store.state.global.skills['disabled-example'] = true;
+  f.store.state.global.mcp['native:disabled'] = true;
+  await f.runtime.changed();
+  assert.equal((await f.ctx.skills.get('disabled-example')).content, 'disabled-example');
+  assert.equal((await f.execute('mcp__disabled__ping')).isError, false);
+});
 test('real SkillRegistry blocks list and body loading, honors workspace and parent scope, restores on teardown', async t => {
   const f = await fixture(t);
   f.ctx.skills.register({ name: 'example', description: 'Example skill', content: 'BODY', source: 'test' });

@@ -1,10 +1,21 @@
 import { scopeOf } from '@deepseek-ai/dsh-scope';
+import { symbols } from '@deepseek-ai/cordis';
 import * as nativeMcp from '@deepseek-ai/dsh-mcp-client';
 import { allowed, workspaceOf } from './policy.js';
 
 export function createRuntime(ctx, store, discovery) {
   const skills = ctx.skills;
-  const originalSnapshot = skills.snapshot, originalGet = skills.get;
+  // Cordis returns a new method proxy on every read. Own the hooks on the raw
+  // service, while calls still use the scoped receiver supplied by Cordis.
+  const skillTarget = skills[symbols.original];
+  // v1.2.0–1.2.1 could leave these exact two wrappers behind. Recognize both
+  // frozen bodies before recovering the native methods; keep unrelated hooks.
+  const source = method => Function.prototype.toString.call(method).replace(/\r\n/g, '\n');
+  const legacyPolicy = source(skillTarget.snapshot) === source(snapshot) && source(skillTarget.get) === source(get);
+  const originalSnapshot = legacyPolicy ? Object.getPrototypeOf(skillTarget).snapshot : skillTarget.snapshot;
+  const originalGet = legacyPolicy ? Object.getPrototypeOf(skillTarget).get : skillTarget.get;
+  const snapshotDescriptor = legacyPolicy ? undefined : Object.getOwnPropertyDescriptor(skillTarget, 'snapshot');
+  const getDescriptor = legacyPolicy ? undefined : Object.getOwnPropertyDescriptor(skillTarget, 'get');
   const active = new Map(); let closed = false, pending = Promise.resolve();
   const sourceAllowed = item => item.provider !== 'workspace-capabilities-filesystem' || store.state.discovery?.includeExternal === true;
   function lookup(options, receiver) { return workspaceOf(options.scope ?? scopeOf(receiver?.ctx ?? ctx), options.cwd); }
@@ -35,10 +46,16 @@ export function createRuntime(ctx, store, discovery) {
     return skill && sourceAllowed(skill) && allowed(store.state, 'skills', name, workspace) ? skill : undefined;
   }
   // Own only these instance wrappers. No installed DSH source is modified.
-  skills.snapshot = snapshot; skills.get = get;
+  skillTarget.snapshot = snapshot; skillTarget.get = get;
   ctx.effect(() => () => {
-    if (skills.snapshot === snapshot) skills.snapshot = originalSnapshot;
-    if (skills.get === get) skills.get = originalGet;
+    if (skillTarget.snapshot === snapshot) {
+      if (snapshotDescriptor) Object.defineProperty(skillTarget, 'snapshot', snapshotDescriptor);
+      else delete skillTarget.snapshot;
+    }
+    if (skillTarget.get === get) {
+      if (getDescriptor) Object.defineProperty(skillTarget, 'get', getDescriptor);
+      else delete skillTarget.get;
+    }
   }, 'capabilities: skill policy');
   ctx.tools.guard(exec => toolAllowed(exec.name, workspaceOf(exec.agent), exec.arguments)
     ? undefined : '此工作区的 Skill 与 MCP 设置已禁用该 MCP，或尚未批准连接。');

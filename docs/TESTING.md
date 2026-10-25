@@ -10,7 +10,7 @@ npm run check
 npm test
 ```
 
-The 43 tests cover global and workspace rules, root-agent scope inheritance, Skill loading, MCP tools/resources, nested calls, source selection, authentication, persistence and concurrency, current-model selection, translation caching, explicit retranslation, workspace display-title priority, and canonical workspace identity.
+The 47 tests cover global and workspace rules, root-agent scope inheritance, Skill loading, MCP tools/resources, nested calls, source selection, authentication, persistence and concurrency, current-model selection, translation caching, explicit retranslation, workspace display-title priority, and canonical workspace identity. They also verify repeated Cordis hot reloads, native Skill method restoration, live upgrades from the frozen v1.2.1 wrappers, preservation of unrelated hooks, and management visibility of disabled Skills and MCP servers.
 
 Tests use the real DSH registries and MCP client with a small local test server. They require permission to bind a loopback HTTP port and spawn a local Node.js process. Model tests use stubs and do not consume model API credits.
 
