@@ -14,10 +14,10 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 900 }, loc
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
 let workspaceId;
-async function rpc(method, request) {
+async function rpc(method, args) {
   const response = await page.request.post(root + '/api/' + method, {
     headers: { Origin: root },
-    data: { type: 'client-request', rpcId: randomUUID(), method, payload: { args: { request } } }
+    data: { type: 'client-request', rpcId: randomUUID(), method, payload: { args } }
   });
   assert.equal(response.status(), 200);
   const { result } = await response.json();
@@ -38,24 +38,27 @@ async function titleIs(title) {
 }
 try {
   const initial = await state();
-  const created = await rpc('workspace/create', { path: directory });
-  assert.equal(created.created, true, 'Use a fresh temporary directory, never rename an existing workspace');
-  workspaceId = created.workspace.workspaceId;
-  const first = 'Workspace rename test';
-  await rpc('workspace/rename', { workspaceId, title: first });
+  // Mount the existing UI first: a fresh client otherwise opens the newest workspace
+  // and DSH can create an empty draft in the temporary test directory.
   await page.goto(root);
   await page.getByRole('button', { name: /^(账号菜单|Account menu)$/ }).click();
   await page.getByText(/^(设置|Settings)$/).click();
   await page.getByRole('button', { name: 'Skill 与 MCP', exact: true }).click();
-  await titleIs(first);
   const scope = page.getByRole('combobox', { name: '规则范围', exact: true });
+  await scope.waitFor();
+  const created = await rpc('workspace/create', { request: { path: directory } });
+  assert.equal(created.created, true, 'Use a fresh temporary directory, never rename an existing workspace');
+  workspaceId = created.workspace.workspaceId;
+  const first = 'Workspace rename test';
+  await rpc('workspace/rename', { request: { workspaceId, title: first } });
+  await titleIs(first);
   await scope.selectOption(directory);
   const stale = await state('?workspace=' + encodeURIComponent(directory));
   assert.equal(stale.workspaces.find(item => item.path === directory)?.title, first);
   // Keep every HTTP refresh stale: only the sidebar's native subscription can pass.
   await page.route(api + '/state?*', route => route.fulfill({ json: stale }));
   for (const title of ['实时重命名测试', 'Renamed again · 建模']) {
-    await rpc('workspace/rename', { workspaceId, title });
+    await rpc('workspace/rename', { request: { workspaceId, title } });
     await titleIs(title);
     assert.equal(await scope.inputValue(), directory, 'Renaming must retain the selected policy path');
     assert.equal((await state()).workspaces.find(item => item.path === directory)?.title, title);
@@ -67,8 +70,10 @@ try {
   assert.equal(final.revision, initial.revision);
   assert.deepEqual(final.defaults, initial.defaults);
   assert.deepEqual(final.discovery, initial.discovery);
+  const sessions = await rpc('session/list', { _request: {} });
+  assert.equal(sessions.items.some(item => item.cwd === directory), false, 'The test must not leave a draft Session');
   console.log('Workspace checks passed: registry titles, live renames with stale HTTP, stable selected scope, no duplicates, unchanged policy, zero page errors.');
 } finally {
-  try { if (workspaceId) await rpc('workspace/delete', { workspaceId }); }
+  try { if (workspaceId) await rpc('workspace/delete', { request: { workspaceId } }); }
   finally { await browser.close(); await rm(directory, { recursive: true, force: true }); }
 }
