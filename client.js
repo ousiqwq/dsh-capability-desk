@@ -36,7 +36,7 @@ window.__ModuleLoader__.load({
       const response = await fetch(BASE + path, { credentials: 'same-origin', cache: 'no-store', signal, ...(value === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '请求失败'); return data;
     }
-    function CapabilitySettings({ getModelContext }) {
+    function CapabilitySettings({ getModelContext, registeredWorkspaces }) {
       const [workspace, setWorkspace] = React.useState(''), [view, setView] = React.useState(null);
       const [tab, setTab] = React.useState('skills'), [search, setSearch] = React.useState(''), [error, setError] = React.useState('');
       const [busy, setBusy] = React.useState(false), [message, setMessage] = React.useState(''), [path, setPath] = React.useState('');
@@ -70,6 +70,9 @@ window.__ModuleLoader__.load({
         finally { locked.current = false; setBusy(false); }
       }
       const button = (text, onClick, options = {}) => h('button', { type: 'button', onClick, disabled: busy, ...options }, text);
+      const workspaceOptions = new Map((view?.workspaces ?? []).map(item => [item.path, item]));
+      // The sidebar's live store wins over older HTTP responses, including polling in flight.
+      for (const item of registeredWorkspaces) if (item.title) workspaceOptions.set(item.path, item);
       const items = (view?.[tab] ?? []).filter(item => [item.name, item.description, item.path, item.source, item.workspace, item.translation?.title, item.translation?.description].filter(Boolean).join(' ').toLowerCase().includes(search.toLowerCase()));
       async function translate(keys, { force = false, showAll = false } = {}) {
         if (locked.current || !keys.length) return;
@@ -141,7 +144,7 @@ window.__ModuleLoader__.load({
             onChange: event => action({ action: 'discovery', value: event.target.checked }) }), '扫描其他应用的 Skill / MCP（全局）'),
           h('p', { className: 'wc-muted' }, '可选读取 CC Switch 共享 Skill 目录，以及 Codex、Claude、Cursor 配置。扫描只读取来源；新能力默认禁用，MCP 首次连接仍需批准。')),
         h('div', { className: 'wc-row wc-scope-controls' }, h('label', { className: 'wc-grow' }, '规则范围', h('select', { 'aria-label': '规则范围', value: workspace, disabled: busy, onChange: event => setWorkspace(event.target.value) },
-          h('option', { value: '' }, '全局默认'), ...(view?.workspaces ?? []).map(item => h('option', { key: item.path, value: item.path }, item.title + ' — ' + item.path)))),
+          h('option', { value: '' }, '全局默认'), ...[...workspaceOptions.values()].sort((a, b) => a.path.localeCompare(b.path)).map(item => h('option', { key: item.path, value: item.path }, item.title + ' — ' + item.path)))),
           button('重新发现', () => action({ action: 'refresh' }), { disabled: busy || !view })),
         h('details', null, h('summary', { className: 'wc-muted' }, '添加已有目录的工作区规则'),
           h('div', { className: 'wc-row' }, h('input', { className: 'wc-grow', 'aria-label': '工作区绝对路径', placeholder: '/home/用户名/项目', value: path, onChange: event => setPath(event.target.value) }),
@@ -169,15 +172,20 @@ window.__ModuleLoader__.load({
     }
     function apply(ctx) {
       ctx.effect(() => { const style = document.createElement('style'); style.textContent = css; document.head.appendChild(style); return () => style.remove(); }, 'capabilities: styles');
+      const subscribeWorkspaces = listener => ctx.workspaces.list.subscribe(listener);
+      const getWorkspaceSnapshot = () => ctx.workspaces.list.getSnapshot();
       function getModelContext() {
         const sessionId = ctx.uiSession.current.getSnapshot()?.key;
         if (!sessionId) return {};
         try { const selection = ctx.modelDirectories.directoryFor(sessionId).store.getSnapshot().current; return { sessionId, ...(selection ? { selection } : {}) }; }
         catch { return { sessionId }; }
       }
-      function Page() { return h(CapabilitySettings, { getModelContext }); }
+      function Page() {
+        const snapshot = React.useSyncExternalStore(subscribeWorkspaces, getWorkspaceSnapshot);
+        return h(CapabilitySettings, { getModelContext, registeredWorkspaces: snapshot.items });
+      }
       ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'workspace-capabilities', order: 20, label: () => 'Skill 与 MCP' }, Page));
     }
-    return { name: 'workspace-capabilities-client', inject: ['slots', 'uiSession', 'modelDirectories'], apply };
+    return { name: 'workspace-capabilities-client', inject: ['slots', 'uiSession', 'modelDirectories', 'workspaces'], apply };
   }
 });

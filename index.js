@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { CapabilitySkillProvider } from './skill-provider.js';
 import { PolicyStore } from './store.js';
-import { canonical } from './policy.js';
+import { collectWorkspaces } from './workspaces.js';
 import { Discovery } from './discovery.js';
 import { createRuntime } from './runtime.js';
 import { createApi, BASE } from './http-api.js';
@@ -17,15 +17,10 @@ export async function apply(ctx, config) {
   const home = homedir(), dshHome = process.env.DSH_HOME || join(home, '.dsh');
   const baseline = await ctx.skills.snapshot({ cwd: process.cwd() });
   const store = await new PolicyStore(join(config.dataDir || join(dshHome, 'workspace-capabilities'), 'policy.json')).init(baseline.skills.map(item => item.name));
-  const workspaces = async () => {
-    const map = new Map();
-    const add = (path, title) => { path = canonical(path); if (path) map.set(path, { path, title: title || path.split('/').at(-1) || path }); };
-    add(process.cwd());
-    for (const item of ctx.get('workspaceRegistry')?.list() ?? []) add(item.path, item.title);
-    for (const agent of ctx.get('agents')?.list() ?? []) add(agent.session?.header?.cwd);
-    for (const path of Object.keys(store.state.workspaces)) add(path);
-    return [...map.values()].sort((a, b) => a.path.localeCompare(b.path));
-  };
+  const workspaces = async () => collectWorkspaces({
+    cwd: process.cwd(), registered: ctx.workspaceRegistry.list(),
+    agents: ctx.agents.list(), rules: store.state.workspaces
+  });
   let runtime;
   let externalFiber;
   let sourceQueue = Promise.resolve();

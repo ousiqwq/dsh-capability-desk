@@ -10,7 +10,7 @@ npm run check
 npm test
 ```
 
-The 40 tests cover global and workspace rules, root-agent scope inheritance, Skill loading, MCP tools/resources, nested calls, source selection, authentication, persistence and concurrency, current-model selection, translation caching, and explicit retranslation.
+The 43 tests cover global and workspace rules, root-agent scope inheritance, Skill loading, MCP tools/resources, nested calls, source selection, authentication, persistence and concurrency, current-model selection, translation caching, explicit retranslation, workspace display-title priority, and canonical workspace identity.
 
 Tests use the real DSH registries and MCP client with a small local test server. They require permission to bind a loopback HTTP port and spawn a local Node.js process. Model tests use stubs and do not consume model API credits.
 
@@ -36,3 +36,13 @@ DSH_TEST_URL=http://127.0.0.1:3080 npm run test:browser -- --retranslate
 ```
 
 This optional command consumes the configured model's API credits and replaces one cached translation. The regular automated tests do neither.
+
+### Live workspace rename check
+
+With DSH running on the same host and the updated plugin enabled:
+
+```bash
+DSH_TEST_URL=http://127.0.0.1:3080 npm run test:workspaces
+```
+
+This creates a temporary directory and workspace registration, renames it twice through DSH's native API, and checks the settings selector without closing the page. HTTP polling is deliberately held at an older title to verify that the sidebar's live workspace store supplies the name. It also checks that the selected directory and policy revision stay unchanged. The temporary workspace registration and directory are removed afterwards; no conversation is created and no model is called.

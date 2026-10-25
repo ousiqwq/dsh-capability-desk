@@ -9,6 +9,7 @@ Control which Skills and MCP servers DeepSeek Harness can use globally and per w
 ## 功能
 
 - **全局与工作区规则**：每个工作区可选择继承全局、启用或禁用；子 Agent 继承根会话的工作区。
+- **工作区名称实时同步**：「规则范围」显示侧边栏中的自定义名称，重命名后立即更新；目录路径及已有规则保持不变。
 - **默认只发现 DSH 自身配置**：额外来源需手动开启，可读取 CC Switch 共享技能目录及 Codex、Claude、Cursor 配置。
 - **Skill 控制**：过滤能力目录，并在正文加载时再次检查规则。
 - **MCP 控制**：使用 DSH 原生 stdio / Streamable HTTP 客户端，控制工具、资源和相关提示词；新连接需要明确批准。
@@ -33,16 +34,16 @@ Control which Skills and MCP servers DeepSeek Harness can use globally and per w
 
 ## 安装
 
-先安装并运行支持上述版本的 DeepSeek Harness。下载 [v1.2.0 插件包](https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.0/dsh-plugin-workspace-capabilities-1.2.0.tgz)，然后执行：
+先安装并运行支持上述版本的 DeepSeek Harness。下载 [v1.2.1 插件包](https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.1/dsh-plugin-workspace-capabilities-1.2.1.tgz)，然后执行：
 
 ```bash
-dsh plugin --profile web add ./dsh-plugin-workspace-capabilities-1.2.0.tgz
+dsh plugin --profile web add ./dsh-plugin-workspace-capabilities-1.2.1.tgz
 ```
 
 也可以直接使用下载链接：
 
 ```bash
-dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.0/dsh-plugin-workspace-capabilities-1.2.0.tgz
+dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.1/dsh-plugin-workspace-capabilities-1.2.1.tgz
 ```
 
 在 DSH 插件页面启用 `dsh-plugin-workspace-capabilities`，重启 DSH 并刷新页面，打开 **设置 → Skill 与 MCP**。已安装并启用的版本更新后无需重复启用。
@@ -93,12 +94,13 @@ DSH 已注册的 Skill 由原生提供器发现。MCP 默认扫描 DSH 配置、
 
 ## 测试与实现
 
-`npm test` 包含 40 项自动测试，使用真实的 DSH Skill 注册器、工具执行器及原生 MCP 客户端；模型调用使用测试桩。浏览器布局和真实模型的手动验证方法见 [测试说明](docs/TESTING.md)。
+`npm test` 包含 43 项自动测试，使用真实的 DSH Skill 注册器、工具执行器及原生 MCP 客户端；模型调用使用测试桩。浏览器布局、工作区名称同步和真实模型的手动验证方法见 [测试说明](docs/TESTING.md)。
 
 | 文件 | 职责 |
 | --- | --- |
 | `index.js` | 插件及来源生命周期 |
 | `client.js` | 设置面板与翻译控件 |
+| `workspaces.js` | 工作区目录归一化与自定义名称优先级 |
 | `runtime.js` | Skill/MCP 执行策略 |
 | `discovery.js` | MCP 配置发现 |
 | `translations.js` | 模型选择、翻译与缓存 |

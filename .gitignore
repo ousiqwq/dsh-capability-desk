@@ -1,4 +1,5 @@
 node_modules/
+.serena/
 test-results/
 coverage/
 artifacts/
