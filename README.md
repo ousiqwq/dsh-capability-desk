@@ -1,78 +1,55 @@
 # DSH Capability Desk
 
-**DeepSeek Harness 的 Skill 与 MCP 能力控制台。**
+**简体中文** | [English](README.en.md)
 
-Control which Skills and MCP servers DeepSeek Harness can use globally and per workspace, with optional discovery and cached model-powered Chinese translations.
+DeepSeek Harness 的 Skill 与 MCP 管理插件。按全局或工作区设置可用能力，发现已配置的 Skill/MCP，并使用当前模型翻译名称和说明。
 
-进入 **设置 → Skill 与 MCP**，管理当前 Agent 可用的能力。包名为 `dsh-plugin-workspace-capabilities`。
+入口：**设置 → Skill 与 MCP** · 插件包：`dsh-plugin-workspace-capabilities`
 
 ## 功能
 
-- **全局与工作区规则**：每个工作区可选择继承全局、启用或禁用；子 Agent 继承根会话的工作区。
-- **工作区名称实时同步**：「规则范围」显示侧边栏中的自定义名称，重命名后立即更新；目录路径及已有规则保持不变。
-- **热更新保持目录完整**：禁用的 Skill 与 MCP 仍显示在管理页；修复旧版热更新遗留过滤器导致 Skill 隐藏的问题，已有规则和译文不变。
-- **默认只发现 DSH 自身配置**：额外来源需手动开启，可读取 CC Switch 共享技能目录及 Codex、Claude、Cursor 配置。
-- **Skill 控制**：过滤能力目录，并在正文加载时再次检查规则。
-- **MCP 控制**：使用 DSH 原生 stdio / Streamable HTTP 客户端，控制工具、资源和相关提示词；新连接需要明确批准。
-- **中文翻译**：使用当前界面选择的模型翻译名称和说明，无会话时使用 DSH 默认模型；仅在点击翻译时调用模型。
-- **译文缓存**：按模型及原文区分，保存在本地。卡片右下角图标切换原文和译文，「重新翻译」更新缓存，失败时保留旧译文。
-- **持久化与修订检查**：原子保存策略、保留上一版本，并防止多个页面覆盖彼此的修改。
-- **响应式设置页**：支持深浅主题和窄窗口，翻译操作位于卡片右下角。
+- **全局与工作区规则**：为每项能力选择继承、启用或禁用；工作区名称随侧边栏重命名实时更新。
+- **能力发现**：默认扫描 DSH 自身；可选读取 CC Switch 共享 Skill 目录及 Codex、Claude、Cursor 配置。
+- **Skill 控制**：管理能力目录与正文加载；禁用的项目仍保留在设置列表中。
+- **MCP 控制**：支持原生 stdio / Streamable HTTP 客户端，管理工具、资源及相关提示词，查看连接状态和工具说明。
+- **中文翻译**：跟随当前界面模型；无会话时使用默认模型。译文按模型和原文缓存，可切换原文或重新翻译。
+- **即时保存**：规则用于后续调用，支持修订检查、热更新、深浅主题与窄屏。
 
-扫描来源只读取配置，不修改其他应用的设置。关闭额外来源会移除相关 Skill 目录监听，并停止本插件管理的外部 MCP 连接。
+### 工作区规则与 Skill 翻译
 
-## 兼容性
+选择规则范围，单独调整能力状态，在卡片右下角切换译文。
 
-当前版本已验证：
+![工作区 Skill 规则与中文译文](docs/images/skills.png)
 
-| 组件 | 版本 |
-| --- | --- |
-| DeepSeek Harness | `0.2.1-rc.3`、`0.2.1-rc.5` |
-| Node.js | `26` |
-| Cordis | `4.0.5` |
+### MCP 连接与工具说明
 
-插件依赖 DSH 原生服务接口。其他 Harness 版本需要重新验证兼容性。
+查看来源、连接状态与工具列表，为每个 MCP 设置可用规则。
 
-此版本显式支持上述两个 RC 版本，无需设置版本豁免。CI 分别安装两套 DSH 依赖运行回归测试；升级保留已有配置和数据。
+![MCP 状态、工具说明与翻译](docs/images/mcp.png)
 
 ## 安装
 
-先安装并运行支持上述版本的 DeepSeek Harness。下载 [v1.2.3 插件包](https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.3/dsh-plugin-workspace-capabilities-1.2.3.tgz)，然后执行：
-
-```bash
-dsh plugin --profile web add ./dsh-plugin-workspace-capabilities-1.2.3.tgz
-```
-
-也可以直接使用下载链接：
+兼容 DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5**，Node.js **26**。其他 Harness 版本需确认接口兼容性。
 
 ```bash
 dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.3/dsh-plugin-workspace-capabilities-1.2.3.tgz
 ```
 
-在 DSH 插件页面启用 `dsh-plugin-workspace-capabilities`，重启 DSH 并刷新页面，打开 **设置 → Skill 与 MCP**。已安装并启用的版本更新后无需重复启用。
-
-### 从源码打包
-
-```bash
-git clone https://github.com/ousiqwq/dsh-capability-desk.git
-cd dsh-capability-desk
-npm ci --ignore-scripts
-npm run check
-npm test
-npm pack
-```
-
-将生成的 `.tgz` 按上面的方式安装。项目以普通 JavaScript ES Modules 编写，无需编译。
+在插件管理中启用插件，重启 DSH 并刷新页面，打开 **设置 → Skill 与 MCP**。也可以从 [Releases](https://github.com/ousiqwq/dsh-capability-desk/releases) 下载后本地安装。
 
 ## 使用
 
-1. 选择 **全局默认**，设置 Skill 或 MCP 的默认规则。
-2. 选择某个工作区，为其设置 **继承全局 / 启用 / 禁用**。
-3. 需要其他应用来源时，勾选 **扫描其他应用的 Skill / MCP**。
-4. 对首次接入的 MCP 检查来源并点击 **批准配置并启用连接**。源配置变化后需要重新批准。
-5. 点击卡片右下角翻译图标查看译文；已有缓存时，切换显示无需调用模型。
+1. 选择 **全局默认**，设定新能力默认状态及各项能力的规则。
+2. 选择工作区，设置 **继承全局 / 启用 / 禁用**。
+3. 需要额外来源时，开启 **扫描其他应用的 Skill / MCP**。
+4. 对新发现的外部 MCP 点击 **批准配置并启用连接**；配置发生变化后重新批准。
+5. 点击翻译图标查看译文，或用 **翻译当前列表** 批量翻译。**重新翻译** 会更新缓存。
 
-DSH 已注册的 Skill 由原生提供器发现。MCP 默认扫描 DSH 配置、`~/.dsh/mcp.json`、工作区 `.dsh/mcp.json` 以及 DSH 当前的工具注册表。MCP JSON 使用 `mcpServers` 对象，例如：
+子 Agent 沿用根会话的工作区规则。修改不需要新建对话；已加载到模型上下文中的内容不会被撤回。普通文件与终端工具仍遵循 DSH 自身权限。
+
+## 发现来源
+
+Skill 由 DSH 的原生提供器发现。MCP 来源包括 DSH 配置、`~/.dsh/mcp.json`、工作区 `.dsh/mcp.json` 与当前工具注册表。MCP JSON 示例：
 
 ```json
 {
@@ -85,33 +62,31 @@ DSH 已注册的 Skill 由原生提供器发现。MCP 默认扫描 DSH 配置、
 }
 ```
 
-运行时数据存放在 `$DSH_HOME/workspace-capabilities/`，默认是 `~/.dsh/workspace-capabilities/`：
+扫描读取来源配置；规则只影响 DSH。关闭额外来源会移除相关 Skill 监听，并停止本插件管理的外部 MCP 连接。SSE 与其他应用的私有 OAuth 状态不在导入范围内。
+
+## 翻译与存储
+
+翻译使用能力名称与说明，保留原始标识符和 Agent 调用方式。已有缓存时切换显示不发起新的翻译；重新翻译失败会保留旧译文。
+
+数据位于 `$DSH_HOME/workspace-capabilities/`，默认 `~/.dsh/workspace-capabilities/`：
 
 | 文件 | 用途 |
 | --- | --- |
-| `policy.json` | 全局、工作区规则、来源开关与配置批准记录 |
-| `policy.json.bak` | 上一次保存的策略 |
-| `translations.json` | 本地译文缓存 |
+| `policy.json` | 全局与工作区规则、来源选项、配置批准记录 |
+| `policy.json.bak` | 上一版策略 |
+| `translations.json` | 译文缓存 |
 
-模型翻译仅提交能力名称和说明，不提交 Skill 正文、MCP 环境变量或认证头。翻译使用现有模型服务，可能消耗对应服务的额度。SSE 和其他应用的私有 OAuth 状态不会导入。
+## 开发
 
-## 测试与实现
+```bash
+npm ci --ignore-scripts
+npm run check
+npm test
+npm pack
+```
 
-`npm test` 包含 47 项自动测试，使用真实的 DSH Skill 注册器、工具执行器及原生 MCP 客户端；模型调用使用测试桩。包含反复热更新、旧版过滤器迁移及禁用目录保留的回归测试。浏览器布局、工作区名称同步和真实模型的手动验证方法见 [测试说明](docs/TESTING.md)。
+项目使用 JavaScript ES Modules，无需编译。浏览器检查命令见 [TESTING.md](docs/TESTING.md)。
 
-| 文件 | 职责 |
-| --- | --- |
-| `index.js` | 插件及来源生命周期 |
-| `client.js` | 设置面板与翻译控件 |
-| `workspaces.js` | 工作区目录归一化与自定义名称优先级 |
-| `runtime.js` | Skill/MCP 执行策略 |
-| `discovery.js` | MCP 配置发现 |
-| `translations.js` | 模型选择、翻译与缓存 |
-| `store.js` / `policy.js` | 策略持久化与规则 |
-| `http-api.js` | 设置接口与来源认证 |
-
-规则控制后续的 Skill 加载及 MCP 调用，不能撤回已经进入模型上下文的内容。普通文件和终端工具不在本插件控制范围内，因此这些规则不构成操作系统沙箱。网页接口沿用 DSH 自身的认证及受信来源检查。
-
-## License
+## 许可证
 
 [MIT](LICENSE) © 2026 osiqwq
