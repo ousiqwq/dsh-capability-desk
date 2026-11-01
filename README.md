@@ -27,24 +27,26 @@ Control which Skills and MCP servers DeepSeek Harness can use globally and per w
 
 | 组件 | 版本 |
 | --- | --- |
-| DeepSeek Harness | `0.2.1-rc.3` |
+| DeepSeek Harness | `0.2.1-rc.3`、`0.2.1-rc.5` |
 | Node.js | `26` |
 | Cordis | `4.0.5` |
 
 插件依赖 DSH 原生服务接口。其他 Harness 版本需要重新验证兼容性。
 
+此版本显式支持上述两个 RC 版本，无需设置版本豁免。CI 分别安装两套 DSH 依赖运行回归测试；升级保留已有配置和数据。
+
 ## 安装
 
-先安装并运行支持上述版本的 DeepSeek Harness。下载 [v1.2.2 插件包](https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.2/dsh-plugin-workspace-capabilities-1.2.2.tgz)，然后执行：
+先安装并运行支持上述版本的 DeepSeek Harness。下载 [v1.2.3 插件包](https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.3/dsh-plugin-workspace-capabilities-1.2.3.tgz)，然后执行：
 
 ```bash
-dsh plugin --profile web add ./dsh-plugin-workspace-capabilities-1.2.2.tgz
+dsh plugin --profile web add ./dsh-plugin-workspace-capabilities-1.2.3.tgz
 ```
 
 也可以直接使用下载链接：
 
 ```bash
-dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.2/dsh-plugin-workspace-capabilities-1.2.2.tgz
+dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.3/dsh-plugin-workspace-capabilities-1.2.3.tgz
 ```
 
 在 DSH 插件页面启用 `dsh-plugin-workspace-capabilities`，重启 DSH 并刷新页面，打开 **设置 → Skill 与 MCP**。已安装并启用的版本更新后无需重复启用。
