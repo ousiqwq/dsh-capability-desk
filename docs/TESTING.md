@@ -1,6 +1,6 @@
-# Development checks
+# Development
 
-Use Node.js 26:
+Use Node.js 26.
 
 ```bash
 npm ci --ignore-scripts
@@ -8,36 +8,26 @@ npm run check
 npm test
 ```
 
-Coverage includes global/workspace rules, session scope, Skill loading, MCP calls, discovery, translations, caching, persistence, hot reloads, and workspace labels. CI runs against all three supported Harness versions.
+Rebuild the interface dictionaries after editing `locales.js`:
 
-## Browser checks
+```bash
+npm run i18n:build
+```
 
-Start an accessible Harness Web instance with this plugin enabled and a Skill with a cached translation:
+## Browser commands
+
+Start Harness Web with this plugin enabled and at least one cached translation.
 
 ```bash
 npx playwright install chromium
 DSH_TEST_URL=http://127.0.0.1:3080 npm run test:browser
+DSH_TEST_URL=http://127.0.0.1:3080 npm run test:workspaces
 ```
 
-The browser check covers responsive controls, translation actions, cache display, and reload behavior. Set `DSH_TEST_ARTIFACTS` to change the output directory from `test-results/`.
-
-Add `-- --retranslate` to exercise translation through the configured model and replace one cached result:
+To request a fresh translation with the selected model:
 
 ```bash
 DSH_TEST_URL=http://127.0.0.1:3080 npm run test:browser -- --retranslate
 ```
 
-Check live workspace renames with:
-
-```bash
-DSH_TEST_URL=http://127.0.0.1:3080 npm run test:workspaces
-```
-
-
-## Harness 0.2.2-rc.2
-
-Compatibility checks cover the independent native tool executor, policy-filtered tool descriptions, complete management catalogs, and teardown. Existing Harness releases remain in the CI matrix. Browser checks cover native settings, per-session persona selection and file downloads.
-
-## Native i18n and translation targets
-
-Tests cover custom target language validation, automatic source detection, same-language results, forced per-item translation, cache separation by target and model, legacy Chinese cache migration, and configuration changes during a request. Browser checks cover native language changes, saved target preferences, MCP tool translations, cancelled requests, and responsive layouts. Opening the settings or discovering capabilities does not start translation.
+Set `DSH_TEST_ARTIFACTS` to select an output directory.
