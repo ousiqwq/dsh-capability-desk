@@ -8,6 +8,16 @@ DeepSeek Harness 的 Skill 与 MCP 管理插件。按全局或工作区设置可
 
 界面接入 DSH 原生 i18n，实时跟随 DSH 的语言设置。内置中英文词典；其他界面语言按 DSH 的规则回退到英文。
 
+## 一键安装
+
+兼容 DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2**，Node.js **26**。
+
+```bash
+dsh plugin --profile web add dsh-plugin-workspace-capabilities
+```
+
+在插件管理中启用插件，重启 DSH 并刷新页面，打开 **设置 → Skill 与 MCP**。
+
 ## 功能
 
 - **全局与工作区规则**：为每项能力选择继承、启用或禁用；工作区名称随侧边栏重命名实时更新。
@@ -28,16 +38,6 @@ DeepSeek Harness 的 Skill 与 MCP 管理插件。按全局或工作区设置可
 查看来源、连接状态与工具列表，为每个 MCP 设置可用规则。
 
 ![MCP 状态、工具说明与翻译](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/mcp.png?v=1.3.2)
-
-## 一键安装
-
-兼容 DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2**，Node.js **26**。
-
-```bash
-dsh plugin --profile web add dsh-plugin-workspace-capabilities
-```
-
-在插件管理中启用插件，重启 DSH 并刷新页面，打开 **设置 → Skill 与 MCP**。
 
 ## 使用
 

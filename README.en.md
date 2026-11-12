@@ -8,6 +8,16 @@ Open **Settings → Skills & MCP**. Package: `dsh-plugin-workspace-capabilities`
 
 The interface uses DSH native i18n and follows language changes immediately. Chinese and English dictionaries are included; other interface languages use the native English fallback.
 
+## One-command installation
+
+Compatible with DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2** and Node.js **26**.
+
+```bash
+dsh plugin --profile web add dsh-plugin-workspace-capabilities
+```
+
+Enable the plugin in DSH's plugin manager, restart DSH, refresh the page, and open **Settings → Skills & MCP**.
+
 ## Features
 
 - **Global and workspace rules:** inherit, enable, or disable individual capabilities. Workspace labels follow sidebar renames in real time.
@@ -28,16 +38,6 @@ Select a scope, change each capability's rule, and toggle translated text using 
 Inspect sources, connection status, and tool lists, and configure availability for each server.
 
 ![MCP connection status, tool descriptions, and translations](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/mcp.en.png?v=1.3.2)
-
-## One-command installation
-
-Compatible with DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2** and Node.js **26**.
-
-```bash
-dsh plugin --profile web add dsh-plugin-workspace-capabilities
-```
-
-Enable the plugin in DSH's plugin manager, restart DSH, refresh the page, and open **Settings → Skills & MCP**.
 
 ## Usage
 
