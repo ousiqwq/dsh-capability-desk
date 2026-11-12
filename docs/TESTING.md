@@ -8,7 +8,7 @@ npm run check
 npm test
 ```
 
-Coverage includes global/workspace rules, session scope, Skill loading, MCP calls, discovery, translations, caching, persistence, hot reloads, and workspace labels. CI runs against both supported Harness versions.
+Coverage includes global/workspace rules, session scope, Skill loading, MCP calls, discovery, translations, caching, persistence, hot reloads, and workspace labels. CI runs against all three supported Harness versions.
 
 ## Browser checks
 
@@ -37,3 +37,7 @@ DSH_TEST_URL=http://127.0.0.1:3080 npm run test:workspaces
 ## Harness 0.2.2-rc.2
 
 Compatibility checks cover the independent native tool executor, policy-filtered tool descriptions, complete management catalogs, and teardown. Existing Harness releases remain in the CI matrix. Browser checks cover native settings, per-session persona selection and file downloads.
+
+## Native i18n and translation targets
+
+Tests cover custom target language validation, automatic source detection, same-language results, forced per-item translation, cache separation by target and model, legacy Chinese cache migration, and configuration changes during a request. Browser checks cover native language changes, saved target preferences, MCP tool translations, cancelled requests, and responsive layouts. Opening the settings or discovering capabilities does not start translation.

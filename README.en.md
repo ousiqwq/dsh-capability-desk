@@ -6,6 +6,8 @@ A Skill and MCP manager for DeepSeek Harness. Control available capabilities glo
 
 Open **Settings → Skill 与 MCP (Skill & MCP)**. Package: `dsh-plugin-workspace-capabilities`.
 
+The interface uses DSH native i18n and follows language changes immediately. Chinese and English dictionaries are included; other interface languages use the native English fallback.
+
 ## Features
 
 - **Global and workspace rules:** inherit, enable, or disable individual capabilities. Workspace labels follow sidebar renames in real time.
@@ -32,7 +34,7 @@ Inspect sources, connection status, and tool lists, and configure availability f
 Compatible with DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2** and Node.js **26**. Check interface compatibility before using another Harness version.
 
 ```bash
-dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.4/dsh-plugin-workspace-capabilities-1.2.4.tgz
+dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.3.0/dsh-plugin-workspace-capabilities-1.3.0.tgz
 ```
 
 Enable the plugin in DSH's plugin manager, restart DSH, refresh the page, and open **Settings → Skill 与 MCP**. Packages are also available from [Releases](https://github.com/ousiqwq/dsh-capability-desk/releases).
@@ -90,3 +92,7 @@ The plugin uses JavaScript ES Modules and needs no build step. See [TESTING.md](
 ## License
 
 [MIT](LICENSE) © 2026 osiqwq
+
+### Translation target
+
+Enter a target in **Translate into**, or leave it blank to follow the DSH interface. The preference is persisted through native DSH settings. Source languages are detected automatically. Same-language items retain their original text by default; item translation and retranslation buttons force a fresh translation. The first classification uses the selected model; decisions and translations are cached by target, model, and source content. Opening settings and discovering capabilities do not call a model. Translated labels and descriptions only affect presentation, preserving Skill/MCP identifiers and calls.

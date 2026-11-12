@@ -31,10 +31,10 @@ export function createApi(ctx, store, discovery, runtime, { syncSources, transla
     const result = { revision: state.revision, defaults: state.defaults, discovery: state.discovery, workspace, workspaces: await discovery.workspaces(),
       skills, mcp, translation, complete: observation.complete, scannedAt: discovery.scannedAt, issues: discovery.issues, error: store.error };
     const targets = new Map(translationTargets(result).map(item => [item.key, item]));
-    for (const item of skills) item.translation = translations?.cached(targets.get('skill:' + item.name), translation.model) ?? null;
+    for (const item of skills) item.translation = translations?.cached(targets.get('skill:' + item.name), translation.model, options) ?? null;
     for (const item of mcp) {
-      item.translation = translations?.cached(targets.get('mcp:' + item.id), translation.model) ?? null;
-      for (const tool of item.toolDetails) tool.translation = translations?.cached(targets.get('tool:' + tool.name), translation.model) ?? null;
+      item.translation = translations?.cached(targets.get('mcp:' + item.id), translation.model, options) ?? null;
+      for (const tool of item.toolDetails) tool.translation = translations?.cached(targets.get('tool:' + tool.name), translation.model, options) ?? null;
     }
     return result;
   }
@@ -99,7 +99,7 @@ export function createApi(ctx, store, discovery, runtime, { syncSources, transla
     request.once('aborted', abort); response.once('close', abort);
     try {
       const url = new URL(request.url, 'http://local');
-      const options = { sessionId: url.searchParams.get('sessionId') ?? undefined,
+      const options = { sessionId: url.searchParams.get('sessionId') ?? undefined, uiLocale: url.searchParams.get('uiLocale') ?? undefined, ...(url.searchParams.has('targetLanguage') ? { targetLanguage: url.searchParams.get('targetLanguage') } : {}),
         ...(url.searchParams.has('provider') ? { selection: { provider: url.searchParams.get('provider'), model: url.searchParams.get('model') } } : {}) };
       if (request.method === 'GET' && url.pathname === BASE + '/state') return send(response, 200, await view(url.searchParams.get('workspace') ?? '', options));
       if (request.method !== 'POST' || ![BASE + '/action', BASE + '/translate'].includes(url.pathname)) return send(response, 404, { error: '接口不存在。' });

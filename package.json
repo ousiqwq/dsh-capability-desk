@@ -1,24 +1,29 @@
 {
   "name": "dsh-plugin-workspace-capabilities",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "description": "DSH Capability Desk: workspace Skill/MCP controls and model-powered translations for DeepSeek Harness",
   "type": "module",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/en.json": "./locale/en.json",
+    "./locale/zh.json": "./locale/zh.json"
   },
   "files": [
     "*.js",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "locale"
   ],
   "scripts": {
     "test": "node --test --test-isolation=none tests/*.test.js",
     "test:browser": "node tests/browser-layout.mjs",
     "test:workspaces": "node tests/browser-workspaces.mjs",
-    "check": "node scripts/check.mjs"
+    "check": "node scripts/check.mjs",
+    "i18n:build": "node scripts/sync-locales.mjs",
+    "prepack": "node scripts/sync-locales.mjs --check"
   },
   "dependencies": {
     "smol-toml": "1.9.1",
@@ -44,7 +49,9 @@
         "@deepseek-ai/dsh-client-ui-slots",
         "@deepseek-ai/dsh-client-ui-session",
         "@deepseek-ai/dsh-client-ui-model-selection",
-        "@deepseek-ai/dsh-api-workspace-controller"
+        "@deepseek-ai/dsh-api-workspace-controller",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-settings"
       ]
     }
   },

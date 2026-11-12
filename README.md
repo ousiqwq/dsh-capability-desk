@@ -6,6 +6,8 @@ DeepSeek Harness 的 Skill 与 MCP 管理插件。按全局或工作区设置可
 
 入口：**设置 → Skill 与 MCP** · 插件包：`dsh-plugin-workspace-capabilities`
 
+界面接入 DSH 原生 i18n，实时跟随 DSH 的语言设置。内置中英文词典；其他界面语言按 DSH 的规则回退到英文。
+
 ## 功能
 
 - **全局与工作区规则**：为每项能力选择继承、启用或禁用；工作区名称随侧边栏重命名实时更新。
@@ -32,7 +34,7 @@ DeepSeek Harness 的 Skill 与 MCP 管理插件。按全局或工作区设置可
 兼容 DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2**，Node.js **26**。其他 Harness 版本需确认接口兼容性。
 
 ```bash
-dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.4/dsh-plugin-workspace-capabilities-1.2.4.tgz
+dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.3.0/dsh-plugin-workspace-capabilities-1.3.0.tgz
 ```
 
 在插件管理中启用插件，重启 DSH 并刷新页面，打开 **设置 → Skill 与 MCP**。也可以从 [Releases](https://github.com/ousiqwq/dsh-capability-desk/releases) 下载后本地安装。
@@ -90,3 +92,7 @@ npm pack
 ## 许可证
 
 [MIT](LICENSE) © 2026 osiqwq
+
+### 翻译目标语言
+
+在“翻译成”填写目标语言，留空跟随 DSH 界面；设置通过 DSH 原生配置接口持久保存。原语言自动判断。同语内容默认保留原文，单项翻译与重新翻译按钮可强制生成译文。首次同语判断使用当前模型，结果和译文均按目标语言、模型及原文内容缓存；打开设置或发现列表不会自动调用模型。名称和说明的译文仅用于显示，Skill/MCP 标识符和调用保持原样。

@@ -93,3 +93,74 @@ test('MCP translation targets cover the server and native tool descriptions, exc
   assert.deepEqual(targets.map(entry => entry.key), ['mcp:x', 'tool:mcp__x__run']);
   assert.ok(!JSON.stringify(targets).includes('secret'));
 });
+
+test('custom target languages have separate caches and aliases share the same target', async t => {
+  const f = await fixture(t);
+  await f.service.translate([item], { targetLanguage: 'English' });
+  await f.service.translate([item], { targetLanguage: '英文' });
+  assert.equal(f.calls.length, 1);
+  assert.match(f.calls[0].system, /"targetLanguage":"English"/);
+  await f.service.translate([item], { targetLanguage: '繁體中文' });
+  assert.equal(f.calls.length, 2);
+  assert.match(f.calls[1].system, /"targetLanguage":"繁體中文"/);
+  assert.equal(f.service.cached(item, f.service.model(), { targetLanguage: '日本語' }), null);
+  assert.throws(() => f.service.translate([item], { targetLanguage: 42 }), { status: 400 });
+  assert.throws(() => f.service.translate([item], { targetLanguage: 'a'.repeat(161) }), { status: 400 });
+});
+test('same-language decisions preserve exact source, are cached, and can be forced', async t => {
+  const f = await fixture(t, async function* (options) {
+    const input = JSON.parse(options.messages[0].content[0].text), force = options.system.includes('"force":true');
+    yield { type: 'text-delta', text: JSON.stringify({ items: input.items.map(entry => ({ key: entry.key, status: force ? 'translated' : 'same_language', title: force ? 'Fresh title' : 'must not rewrite', description: force ? 'Fresh description' : 'must not rewrite' })) }) };
+  });
+  const source = { ...item, description: '  中文说明，保留 Ghidra 与 /tmp/example。\n' };
+  const skipped = await f.service.translate([source]);assert.equal(skipped.skipped, 1);
+  assert.equal(f.service.cached(source, f.service.model()).description, source.description);
+  await f.service.translate([source]);assert.equal(f.calls.length, 1);
+  await f.service.translate([source], { force: true });assert.equal(f.calls.length, 2);
+  assert.equal(f.service.cached(source, f.service.model()).status, 'translated');
+  assert.equal(f.service.cached(source, f.service.model()).description, 'Fresh description');
+  assert.match(f.calls[0].system, /Detect source languages automatically/);
+  assert.match(f.calls[0].system, /mixed-language prose still needs translation/);
+});
+test('follow-interface target snapshots change without translating on read', async t => {
+  const f = await fixture(t);
+  assert.equal(f.service.info({ uiLocale: 'en' }).target.label, 'English');
+  assert.equal(f.service.info({ uiLocale: 'zh' }).target.label, '简体中文');
+  assert.equal(f.service.info({ uiLocale: 'ja' }).target.label, '日本語');
+  assert.equal(f.calls.length, 0);
+  await f.service.translate([item], { uiLocale: 'en' });
+  assert.ok(f.service.cached(item, f.service.model(), { uiLocale: 'en' }));
+  assert.equal(f.service.cached(item, f.service.model(), { uiLocale: 'zh' }), null);
+});
+test('legacy Chinese cache is retained only for the matching target after restart', async t => {
+  const { writeFile } = await import('node:fs/promises'), { createHash } = await import('node:crypto');
+  const f = await fixture(t), model = f.service.model(), key = createHash('sha256').update(JSON.stringify([1, 'zh-CN', model.provider, model.model, item.key, item.name, item.description])).digest('hex');
+  await writeFile(f.file, JSON.stringify({ version: 1, entries: [[key, { title: '旧标题', description: '旧缓存' }]] }));
+  const service = await new TranslationService({ get: name => f.services[name] }, f.file).init();t.after(() => service.close());
+  assert.equal(service.cached(item, model).description, '旧缓存');
+  assert.equal(service.cached(item, model, { targetLanguage: 'English' }), null);
+  await service.translate([item]);assert.equal(f.calls.length, 0);
+  await service.translate([item], { targetLanguage: 'English' });
+  const restored = await new TranslationService({ get: name => f.services[name] }, f.file).init();t.after(() => restored.close());
+  assert.equal(restored.cached(item, model).description, '旧缓存');
+  assert.ok(restored.cached(item, model, { targetLanguage: 'English' }));
+});
+test('force requests cannot join non-force classification and protocol failures preserve the last cache', async t => {
+  let resume, skip = false;
+  const gate = new Promise(resolve => { resume = resolve; });
+  const f = await fixture(t, async function* () { await gate; yield { type: 'text-delta', text: JSON.stringify({ items: [{ key: item.key, status: skip ? 'same_language' : 'translated', title: 'Known', description: 'Known result' }] }) }; });
+  const first = f.service.translate([item]);
+  assert.throws(() => f.service.translate([item], { force: true }), { status: 429 });
+  resume();await first;skip = true;
+  await assert.rejects(f.service.translate([item], { force: true }), { status: 502 });
+  assert.equal(f.service.cached(item, f.service.model()).description, 'Known result');
+});
+
+test('in-flight translation captures its configured target and empty descriptions stay empty', async t => {
+  let resume;const gate=new Promise(r=>{resume=r;});const f=await fixture(t,async function* (){await gate;yield{type:'text-delta',text:JSON.stringify({items:[{key:item.key,status:'same_language'}]})};});
+  let configured='English';const service=await new TranslationService({get:name=>f.services[name]},f.file,{targetLanguage:()=>configured}).init();t.after(()=>service.close());
+  const work=service.translate([item]);configured='简体中文';resume();const result=await work;
+  assert.equal(result.target.label,'English');assert.equal(result.skipped,1);assert.equal(service.cached(item,service.model()),null);assert.equal(service.cached(item,service.model(),{targetLanguage:'English'}).status,'same_language');
+  const g=await fixture(t,async function* (options){const input=JSON.parse(options.messages[0].content[0].text);yield{type:'text-delta',text:JSON.stringify({items:input.items.map(e=>({key:e.key,title:e.name,description:'Invented description'}))})};});
+  const empty={...item,description:''};await g.service.translate([empty]);assert.equal(g.service.cached(empty,g.service.model()).description,'');
+});

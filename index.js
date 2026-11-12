@@ -11,7 +11,7 @@ import { TranslationService } from './translations.js';
 
 export const name = 'workspace-capabilities';
 export const inject = ['skills', 'tools', 'agents', 'workspaceRegistry'];
-export const Config = z.object({ dataDir: z.string(), skillRoots: z.array(String).default([]) });
+export const Config = z.object({ dataDir: z.string(), skillRoots: z.array(String).default([]), translationTargetLanguage: z.string().max(160).pattern(/^[^\u0000-\u001f\u007f]*$/u).default('').volatile() });
 
 export async function apply(ctx, config) {
   const home = homedir(), dshHome = process.env.DSH_HOME || join(home, '.dsh');
@@ -47,7 +47,7 @@ export async function apply(ctx, config) {
   const discovery = new Discovery({ home, dshHome, workspaces, schemas: () => runtime?.originalSchemas() ?? ctx.tools.schemas(), snapshot: options => runtime.originalSnapshot(options), includeExternal: () => store.state.discovery.includeExternal });
   runtime = createRuntime(ctx, store, discovery);
   await syncSources();
-  const translations = await new TranslationService(ctx, join(config.dataDir || join(dshHome, 'workspace-capabilities'), 'translations.json')).init();
+  const translations = await new TranslationService(ctx, join(config.dataDir || join(dshHome, 'workspace-capabilities'), 'translations.json'), { targetLanguage: () => { const value = config.translationTargetLanguage; return value?.get ? value.get() : typeof value === 'function' ? value() : value ?? ''; } }).init();
   ctx.effect(() => () => translations.close(), 'capabilities: translation lifecycle');
   ctx.inject(['settings'], child => child.settings.configure({ auto: false }, ctx.fiber));
   ctx.inject(['webServer', 'connection'], child => {
