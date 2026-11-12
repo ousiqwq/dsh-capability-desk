@@ -34,7 +34,7 @@ Inspect sources, connection status, and tool lists, and configure availability f
 Compatible with DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2** and Node.js **26**. Check interface compatibility before using another Harness version.
 
 ```bash
-dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.3.0/dsh-plugin-workspace-capabilities-1.3.0.tgz
+dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.3.1/dsh-plugin-workspace-capabilities-1.3.1.tgz
 ```
 
 Enable the plugin in DSH's plugin manager, restart DSH, refresh the page, and open **Settings → Skill 与 MCP**. Packages are also available from [Releases](https://github.com/ousiqwq/dsh-capability-desk/releases).

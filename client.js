@@ -289,8 +289,8 @@ function installLocale(ctx) {
 .wc-page{box-sizing:border-box;width:100%;min-width:0;color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;gap:14px;padding:6px 0;font-size:13px;line-height:1.6}
 .wc-page *{box-sizing:border-box}.wc-page h2{font-size:18px;margin:0}.wc-page p{margin:0}.wc-muted{color:var(--dsw-alias-label-secondary);font-size:12px;overflow-wrap:anywhere}
 .wc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}.wc-row>.wc-grow{flex:1;min-width:160px}
-.wc-scope-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end}.wc-scope-controls>.wc-grow{min-width:0}
-.wc-scope-controls select,.wc-scope-controls>button{height:38px}
+.wc-scope-controls,.wc-language-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end}.wc-scope-controls>.wc-grow,.wc-language-controls>.wc-grow{min-width:0}
+.wc-scope-controls select,.wc-scope-controls>button,.wc-language-controls input,.wc-language-controls>button{height:38px}
 .wc-page button,.wc-page select,.wc-page input{font:inherit;color:inherit;background:var(--dsw-alias-bg-module-platform,#292a2b);border:1px solid var(--dsw-alias-border-l2,#48494b);border-radius:8px;min-height:36px;padding:7px 10px;min-width:0;max-width:100%}
 .wc-page button{cursor:pointer}.wc-page button:disabled,.wc-page select:disabled{opacity:.5;cursor:default}.wc-page :focus-visible{outline:2px solid #8baeff;outline-offset:2px}
 .wc-page label{display:flex;flex-direction:column;gap:6px}.wc-card{border:1px solid var(--dsw-alias-border-l2,#48494b);border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:9px;min-width:0}
@@ -443,7 +443,7 @@ function installLocale(ctx) {
           h('div', { className: 'wc-row wc-tabs', role: 'tablist', 'aria-label': tr("能力类型") },
             ...[['skills', 'Skills', view.skills.length], ['mcp', 'MCP', view.mcp.length]].map(([value, label, count]) => button(label + ' (' + count + ')', () => setTab(value), { key: value, role: 'tab', 'aria-selected': tab === value }))),
           h('div', { className: 'wc-card' },
-            h('form', { className: 'wc-row', onSubmit: async event => { event.preventDefault(); if (busy) return; setBusy(true); setError(''); try { await saveLanguageTarget(targetDraft); setMessage(tr("翻译目标语言已保存。")); } catch (cause) { setError(cause.message); } finally { setBusy(false); } } },
+            h('form', { className: 'wc-row wc-language-controls', onSubmit: async event => { event.preventDefault(); if (busy) return; setBusy(true); setError(''); try { await saveLanguageTarget(targetDraft); setMessage(tr("翻译目标语言已保存。")); } catch (cause) { setError(cause.message); } finally { setBusy(false); } } },
               h('label', { className: 'wc-grow' }, tr("翻译成"), h('input', { value: targetDraft, maxLength: 160, list: 'wc-language-targets', 'aria-label': tr("翻译成"), placeholder: tr("跟随界面语言"), onChange: event => setTargetDraft(event.target.value), disabled: busy })),
               h('datalist', { id: 'wc-language-targets' }, ...[tr("简体中文"), tr("繁體中文"), 'English', tr("日本語"), 'Español', 'Français', 'Deutsch', 'Русский', 'Português'].map(value => h('option', { key: value, value }))),
               h('button', { type: 'submit', disabled: busy || targetDraft === languageTarget }, tr("保存语言"))),
