@@ -21,13 +21,13 @@ DeepSeek Harness 的 Skill 与 MCP 管理插件。按全局或工作区设置可
 
 选择规则范围，单独调整能力状态，在卡片右下角切换译文。
 
-![工作区 Skill 规则与中文译文](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/skills.png)
+![工作区 Skill 规则与译文](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/skills.png?v=1.3.2)
 
 ### MCP 连接与工具说明
 
 查看来源、连接状态与工具列表，为每个 MCP 设置可用规则。
 
-![MCP 状态、工具说明与翻译](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/mcp.png)
+![MCP 状态、工具说明与翻译](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/mcp.png?v=1.3.2)
 
 ## 一键安装
 
@@ -45,7 +45,8 @@ dsh plugin --profile web add dsh-plugin-workspace-capabilities
 2. 选择工作区，设置 **继承全局 / 启用 / 禁用**。
 3. 需要额外来源时，开启 **扫描其他应用的 Skill / MCP**。
 4. 对新发现的外部 MCP 点击 **批准配置并启用连接**；配置发生变化后重新批准。
-5. 点击翻译图标查看译文，或用 **翻译当前列表** 批量翻译。**重新翻译** 会更新缓存。
+5. 在 **翻译成** 设置目标语言并点击 **保存语言**，留空跟随界面。
+6. 点击 **翻译当前列表** 批量翻译，同语默认保留原文；单项翻译按钮可强制翻译，**重新翻译** 会更新缓存。
 
 子 Agent 沿用根会话的工作区规则。修改不需要新建对话；已加载到模型上下文中的内容不会被撤回。普通文件与终端工具仍遵循 DSH 自身权限。
 

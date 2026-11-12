@@ -4,7 +4,7 @@
 
 A Skill and MCP manager for DeepSeek Harness. Control available capabilities globally or per workspace, discover configured Skills and MCP servers, and translate names and descriptions using the current model.
 
-Open **Settings → Skill 与 MCP (Skill & MCP)**. Package: `dsh-plugin-workspace-capabilities`.
+Open **Settings → Skills & MCP**. Package: `dsh-plugin-workspace-capabilities`.
 
 The interface uses DSH native i18n and follows language changes immediately. Chinese and English dictionaries are included; other interface languages use the native English fallback.
 
@@ -21,13 +21,13 @@ The interface uses DSH native i18n and follows language changes immediately. Chi
 
 Select a scope, change each capability's rule, and toggle translated text using the bottom-right icon.
 
-![Workspace Skill rules and Chinese translations](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/skills.png)
+![Workspace Skill rules and translations](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/skills.en.png?v=1.3.2)
 
 ### MCP connections and tool descriptions
 
 Inspect sources, connection status, and tool lists, and configure availability for each server.
 
-![MCP connection status, tool descriptions, and translations](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/mcp.png)
+![MCP connection status, tool descriptions, and translations](https://raw.githubusercontent.com/ousiqwq/dsh-capability-desk/main/docs/images/mcp.en.png?v=1.3.2)
 
 ## One-command installation
 
@@ -37,15 +37,16 @@ Compatible with DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2** and No
 dsh plugin --profile web add dsh-plugin-workspace-capabilities
 ```
 
-Enable the plugin in DSH's plugin manager, restart DSH, refresh the page, and open **Settings → Skill 与 MCP**.
+Enable the plugin in DSH's plugin manager, restart DSH, refresh the page, and open **Settings → Skills & MCP**.
 
 ## Usage
 
-1. Choose **全局默认 (Global defaults)** to configure defaults and individual capability rules.
-2. Select a workspace and choose **继承全局 / 启用 / 禁用 (Inherit / Enable / Disable)**.
-3. Enable **扫描其他应用的 Skill / MCP (Scan other applications)** when additional sources are needed.
-4. Select **批准配置并启用连接 (Approve configuration and connect)** for newly discovered external MCP servers. Changed configurations require approval again.
-5. Use the translation icon or **翻译当前列表 (Translate current list)**. **重新翻译 (Retranslate)** refreshes the cache.
+1. Choose **Global default** to configure defaults and individual capability rules.
+2. Select a workspace and choose **Inherit global / Enable / Disable**.
+3. Enable **Scan other applications’ Skills / MCP (global)** when additional sources are needed.
+4. Select **Approve configuration and enable connection** for newly discovered external MCP servers. Changed configurations require approval again.
+5. Set **Translate into** and choose **Save language**, or leave the target blank to follow the interface.
+6. Choose **Translate this list** to translate in batches. Matching languages stay unchanged; individual translation buttons can force a fresh translation. Use **Retranslate** to refresh a cached result.
 
 Subagents use the root session's workspace rules. Changes do not require a new conversation, but cannot retract content already loaded into the model context. Ordinary file and terminal tools continue to follow DSH's own permissions.
 
