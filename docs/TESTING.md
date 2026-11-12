@@ -32,3 +32,8 @@ Check live workspace renames with:
 ```bash
 DSH_TEST_URL=http://127.0.0.1:3080 npm run test:workspaces
 ```
+
+
+## Harness 0.2.2-rc.2
+
+Compatibility checks cover the independent native tool executor, policy-filtered tool descriptions, complete management catalogs, and teardown. Existing Harness releases remain in the CI matrix. Browser checks cover native settings, per-session persona selection and file downloads.

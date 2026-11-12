@@ -1,3 +1,4 @@
+import {mountExecutor,executeTool} from './harness-tools.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Context, symbols } from '@deepseek-ai/cordis';
@@ -15,7 +16,7 @@ import { installLegacySkillPolicy } from './legacy-skill-policy.js';
 export async function fixture(t) {
   const ctx = new Context();
   await ctx.plugin(SystemPrompt, {}).await(); await ctx.plugin(ToolRuntime, {}).await();
-  await ctx.plugin(SkillRegistry).await(); await ctx.plugin(McpResources).await();
+  await mountExecutor(ctx);await ctx.plugin(SkillRegistry).await(); await ctx.plugin(McpResources).await();
   const store = { state: emptyPolicy() }, agents = [];
   ctx.provide('agents'); ctx.set('agents', { list: () => agents });
   const discovery = new Discovery({ home: '/tmp/none', dshHome: '/tmp/none', schemas: () => ctx.tools.schemas(), workspaces: async () => [{ path: '/tmp/a' }, { path: '/tmp/b' }] });
@@ -27,7 +28,7 @@ export async function fixture(t) {
     const scoped = createScope(plugin.ctx, value, parent ? { parent } : undefined); value.ctx = scoped.ctx; agents.push(value); return value;
   };
   let id = 0;
-  const execute = (name, args = {}, agent) => ctx.tools.execute({ name, arguments: args, agent, signal: new AbortController().signal, callId: 'test-' + ++id });
+  const execute = (name, args = {}, agent) => executeTool(ctx,{ name, arguments: args, agent, signal: new AbortController().signal, callId: 'test-' + ++id });
   return { ctx, store, discovery, get runtime() { return runtime; }, plugin, agent, execute };
 }
 test('unloading restores raw Skill methods and disabled bodies without leaving policy wrappers', async t => {
@@ -199,7 +200,7 @@ test('nested tool dispatch passes through the same MCP execution guard', async t
  const f=await fixture(t);let called=0;
  const output={schema:{type:'json'},render:(_args,value)=>[{type:'text',text:JSON.stringify(value)}]};
  f.ctx.tools.register(defineTool({name:'mcp__blocked__ping',description:'ping',parameters:{},output,execute:async()=>{called++;return true;}}));
- f.ctx.tools.register(defineTool({name:'nested_call',description:'nested',parameters:{},output,execute:async(_args,exec)=>{const result=await f.ctx.tools.execute({name:'mcp__blocked__ping',arguments:{},agent:exec.agent,parent:exec.token,signal:exec.signal,callId:'nested'});return {innerDenied:result.isError};}}));
+ f.ctx.tools.register(defineTool({name:'nested_call',description:'nested',parameters:{},output,execute:async(_args,exec)=>{const result=await executeTool(f.ctx,{name:'mcp__blocked__ping',arguments:{},agent:exec.agent,parent:exec.token,signal:exec.signal,callId:'nested'});return {innerDenied:result.isError};}}));
  const result=await f.execute('nested_call');assert.equal(result.isError,false);assert.equal(called,0);assert.ok(JSON.stringify(result).includes('innerDenied'));
 });
 
@@ -217,4 +218,33 @@ test('switching external discovery off immediately blocks previously approved MC
  f.discovery.rows.set(row.id,row);f.store.state.global.mcp[row.id]=true;f.store.state.approvals[row.id]='hash';
  f.store.state.discovery.includeExternal=true;assert.equal(f.runtime.toolAllowed('mcp__external__ping',''),true);
  f.store.state.discovery.includeExternal=false;assert.equal(f.runtime.toolAllowed('mcp__external__ping',''),false);assert.equal(f.runtime.toolAllowed('read_mcp_resource','',{server:'external'}),false);
+});
+
+test('executor schemas respect workspace policy while management keeps disabled definitions and unload restores the native view', async t => {
+  const f = await fixture(t);
+  for (const name of ['enabled', 'disabled']) {
+    const id = 'native:' + name;
+    f.discovery.rows.set(id, {id, name, namespace:name, native:true, workspace:''});
+    f.ctx.tools.register(defineTool({name:'mcp__'+name+'__ping', description:name, parameters:{}, output:{schema:{type:'json'},render:(_args,value)=>[{type:'text',text:JSON.stringify(value)}]},execute:async()=>true}));
+  }
+  f.store.state.global.mcp['native:enabled'] = true;
+  const prompt = await f.ctx.systemPrompt.assemble();
+  assert.ok(prompt.tools.some(tool=>tool.name==='mcp__enabled__ping'));
+  assert.ok(!prompt.tools.some(tool=>tool.name==='mcp__disabled__ping'));
+  assert.deepEqual(f.runtime.originalSchemas().filter(tool=>tool.name.startsWith('mcp__')).map(tool=>tool.name).sort(), ['mcp__disabled__ping','mcp__enabled__ping']);
+  const raw=f.ctx.tools[symbols.original];
+  await f.plugin.dispose();
+  assert.equal(Object.hasOwn(raw,'definitions'),false);
+  assert.ok(f.ctx.tools.schemas().some(tool=>tool.name==='mcp__disabled__ping'));
+});
+
+test('a later tool-view hook survives unload without retaining the disabled capability policy', async t => {
+  const f=await fixture(t), raw=f.ctx.tools[symbols.original];
+  if(typeof raw.setExecutor!=='function'){t.skip('Executor-owned views start in rc.2');return;}
+  f.discovery.rows.set('native:disabled',{id:'native:disabled',name:'disabled',namespace:'disabled',native:true,workspace:''});
+  f.ctx.tools.register(defineTool({name:'mcp__disabled__ping',description:'disabled',parameters:{},output:{schema:{type:'json'},render:(_args,value)=>[{type:'text',text:JSON.stringify(value)}]},execute:async()=>true}));
+  const policy=raw.definitions, later=function(...args){return policy.apply(this,args);};
+  raw.definitions=later;assert.ok(!f.ctx.tools.schemas().some(x=>x.name==='mcp__disabled__ping'));
+  await f.plugin.dispose();assert.equal(raw.definitions,later);assert.ok(f.ctx.tools.schemas().some(x=>x.name==='mcp__disabled__ping'));
+  delete raw.definitions;
 });

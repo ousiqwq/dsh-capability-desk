@@ -57,6 +57,34 @@ export function createRuntime(ctx, store, discovery) {
       else delete skillTarget.get;
     }
   }, 'capabilities: skill policy');
+  const toolTarget = ctx.tools[symbols.original];
+  const originalDefinitions = toolTarget.definitions, originalSchemas = toolTarget.schemas;
+  const definitionDescriptor = Object.getOwnPropertyDescriptor(toolTarget, 'definitions');
+  let catalogReads = 0, capabilityViewActive = true;
+  function catalogSchemas(...args) {
+    catalogReads++;
+    try { return originalSchemas.apply(toolTarget, args); }
+    finally { catalogReads--; }
+  }
+  function definitions(scope, ...args) {
+    const rows = originalDefinitions.call(this, scope, ...args);
+    if (catalogReads || !capabilityViewActive) return rows;
+    const workspace = workspaceOf(scope ?? scopeOf(this.ctx));
+    const hasResources = [...discovery.rows.values()].some(row => rowAllowed(row, workspace));
+    return rows.filter(tool => ['list_mcp_resources', 'list_mcp_resource_templates', 'read_mcp_resource'].includes(tool.name)
+      ? hasResources : toolAllowed(tool.name, workspace));
+  }
+  // rc.2 schema providers run after the text waterfall. Filter the public
+  // capability view used by native and PTC executors, preserving the full catalog.
+  if (typeof toolTarget.setExecutor === 'function') {
+    toolTarget.definitions = definitions;
+    ctx.effect(() => () => {
+      capabilityViewActive = false;
+      if (toolTarget.definitions !== definitions) return;
+      if (definitionDescriptor) Object.defineProperty(toolTarget, 'definitions', definitionDescriptor);
+      else delete toolTarget.definitions;
+    }, 'capabilities: executor capability view');
+  }
   ctx.tools.guard(exec => toolAllowed(exec.name, workspaceOf(exec.agent), exec.arguments)
     ? undefined : '此工作区的 Skill 与 MCP 设置已禁用该 MCP，或尚未批准连接。');
 
@@ -65,11 +93,11 @@ export function createRuntime(ctx, store, discovery) {
       const result = await next(); const workspace = workspaceOf(context.scope);
       const allowedRows = [...discovery.rows.values()].filter(row => rowAllowed(row, workspace));
       return { ...result,
-        tools: result.tools.filter(tool => {
+        ...(Array.isArray(result.tools) ? {tools: result.tools.filter(tool => {
           // Shared resource tools remain visible when at least one server is available.
           if (['list_mcp_resources', 'list_mcp_resource_templates', 'read_mcp_resource'].includes(tool.name)) return allowedRows.length > 0;
           return toolAllowed(tool.name, workspace);
-        }),
+        })} : {}),
         sections: result.sections.flatMap(section => {
           if (section.name.startsWith('mcp:')) {
             const name = section.name.slice(4);
@@ -88,7 +116,7 @@ export function createRuntime(ctx, store, discovery) {
     for (const agent of ctx.get('agents')?.list() ?? []) {
       if (!agent.ctx || !agent.session) continue;
       const workspace = workspaceOf(agent);
-      const denied = ctx.tools.schemas().map(tool => tool.name).filter(name => name.startsWith('mcp__') && !toolAllowed(name, workspace)).sort();
+      const denied = catalogSchemas().map(tool => tool.name).filter(name => name.startsWith('mcp__') && !toolAllowed(name, workspace)).sort();
       const signature = JSON.stringify(denied), previous = restrictions.get(agent);
       if (previous?.signature === signature) continue;
       previous?.dispose();
@@ -140,7 +168,7 @@ export function createRuntime(ctx, store, discovery) {
     await pending;
     await Promise.allSettled([...active.values()].map(entry => entry.fiber.dispose())); active.clear();
   }, 'capabilities: managed MCP lifecycle');
-  return { originalSnapshot: async options => { const result = await originalSnapshot.call(skills, options); return { ...result, skills: result.skills.filter(sourceAllowed) }; }, rowAllowed, toolAllowed, changed, sync,
+  return { originalSchemas: catalogSchemas, originalSnapshot: async options => { const result = await originalSnapshot.call(skills, options); return { ...result, skills: result.skills.filter(sourceAllowed) }; }, rowAllowed, toolAllowed, changed, sync,
     connectionStatus(row) {
       const entry = active.get(row.id);
       if (row.native) return discovery.schemas().some(tool => tool.name.startsWith('mcp__' + row.namespace + '__')) ? 'native' : 'configured';

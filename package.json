@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-workspace-capabilities",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "DSH Capability Desk: workspace Skill/MCP controls and model-powered translations for DeepSeek Harness",
   "type": "module",
   "exports": {
@@ -25,13 +25,13 @@
     "yaml": "^2.8.1"
   },
   "peerDependencies": {
-    "@deepseek-ai/cordis": "4.0.5",
-    "@deepseek-ai/schemastery": "3.18.5",
-    "@deepseek-ai/dsh-skill": "0.2.1-rc.3 || 0.2.1-rc.5",
-    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.3 || 0.2.1-rc.5",
-    "@deepseek-ai/dsh-scope": "0.2.1-rc.3 || 0.2.1-rc.5",
-    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.3 || 0.2.1-rc.5",
-    "@deepseek-ai/dsh-tools": "0.2.1-rc.3 || 0.2.1-rc.5"
+    "@deepseek-ai/cordis": "4.0.5 || 4.1.0",
+    "@deepseek-ai/schemastery": "3.18.5 || 3.19.0",
+    "@deepseek-ai/dsh-skill": "0.2.1-rc.3 || 0.2.1-rc.5 || 0.2.2-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.3 || 0.2.1-rc.5 || 0.2.2-rc.2",
+    "@deepseek-ai/dsh-scope": "0.2.1-rc.3 || 0.2.1-rc.5 || 0.2.2-rc.2",
+    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.3 || 0.2.1-rc.5 || 0.2.2-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.1-rc.3 || 0.2.1-rc.5 || 0.2.2-rc.2"
   },
   "dsh": {
     "bundle": {
@@ -76,15 +76,16 @@
   },
   "packageManager": "npm@11.20.0",
   "devDependencies": {
-    "@deepseek-ai/cordis": "4.0.5",
-    "@deepseek-ai/schemastery": "3.18.5",
-    "@deepseek-ai/dsh-skill": "0.2.1-rc.5",
-    "@deepseek-ai/dsh-skill-filesystem": "0.2.1-rc.5",
-    "@deepseek-ai/dsh-scope": "0.2.1-rc.5",
-    "@deepseek-ai/dsh-mcp-client": "0.2.1-rc.5",
-    "@deepseek-ai/dsh-tools": "0.2.1-rc.5",
-    "@deepseek-ai/dsh-system-prompt": "0.2.1-rc.5",
-    "@deepseek-ai/dsh-mcp-resources": "0.2.1-rc.5",
-    "playwright": "1.64.1"
+    "@deepseek-ai/cordis": "4.1.0",
+    "@deepseek-ai/schemastery": "3.19.0",
+    "@deepseek-ai/dsh-skill": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-scope": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-mcp-client": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-system-prompt": "0.2.2-rc.2",
+    "@deepseek-ai/dsh-mcp-resources": "0.2.2-rc.2",
+    "playwright": "1.64.1",
+    "@deepseek-ai/dsh-tool-executor-native": "0.2.2-rc.2"
   }
 }

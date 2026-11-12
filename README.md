@@ -29,10 +29,10 @@ DeepSeek Harness 的 Skill 与 MCP 管理插件。按全局或工作区设置可
 
 ## 安装
 
-兼容 DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5**，Node.js **26**。其他 Harness 版本需确认接口兼容性。
+兼容 DeepSeek Harness **0.2.1-rc.3 / 0.2.1-rc.5 / 0.2.2-rc.2**，Node.js **26**。其他 Harness 版本需确认接口兼容性。
 
 ```bash
-dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.3/dsh-plugin-workspace-capabilities-1.2.3.tgz
+dsh plugin --profile web add https://github.com/ousiqwq/dsh-capability-desk/releases/download/v1.2.4/dsh-plugin-workspace-capabilities-1.2.4.tgz
 ```
 
 在插件管理中启用插件，重启 DSH 并刷新页面，打开 **设置 → Skill 与 MCP**。也可以从 [Releases](https://github.com/ousiqwq/dsh-capability-desk/releases) 下载后本地安装。

@@ -44,7 +44,7 @@ export async function apply(ctx, config) {
     if (discovery.scanPromise) await discovery.scanPromise;
     await discovery.scan(); await runtime.changed();
   }
-  const discovery = new Discovery({ home, dshHome, workspaces, schemas: () => ctx.tools.schemas(), snapshot: options => runtime.originalSnapshot(options), includeExternal: () => store.state.discovery.includeExternal });
+  const discovery = new Discovery({ home, dshHome, workspaces, schemas: () => runtime?.originalSchemas() ?? ctx.tools.schemas(), snapshot: options => runtime.originalSnapshot(options), includeExternal: () => store.state.discovery.includeExternal });
   runtime = createRuntime(ctx, store, discovery);
   await syncSources();
   const translations = await new TranslationService(ctx, join(config.dataDir || join(dshHome, 'workspace-capabilities'), 'translations.json')).init();
