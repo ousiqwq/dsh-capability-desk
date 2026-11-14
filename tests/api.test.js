@@ -20,6 +20,10 @@ test('settings HTTP API authenticates the whole request, rejects unsafe writes, 
   const post = (value, headers = {}) => fetch(origin + '/action', { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(value) });
   const view = await (await fetch(origin + '/state')).json(); assert.equal(view.skills[0].enabled, true); assert.ok(fullRequest);
   assert.equal((await post({}, { Origin: 'http://evil.invalid' })).status, 403);
+  for (const route of ['/translation/tasks','/translation/cancel','/translation/clear']) {
+    assert.equal((await fetch(origin + route, {method:'POST',headers:{'Content-Type':'application/json',Origin:'http://evil.invalid'},body:'{}'})).status,403);
+    assert.equal((await fetch(origin + route, {method:'POST',headers:{'Content-Type':'text/plain'},body:'{}'})).status,415);
+  }
   assert.equal((await fetch(origin + '/action', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: '{}' })).status, 415);
   assert.equal((await fetch(origin + '/action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: 'x'.repeat(70000) })).status, 413);
   const saved = await post({ revision: 0, action: 'rule', kind: 'skills', key: 'existing', value: false, workspace }); assert.equal(saved.status, 200);
@@ -61,7 +65,7 @@ test('translation API selects server-side discovered metadata and passes current
  const discovery=new Discovery({home,dshHome:join(home,'.dsh'),schemas:()=>[],workspaces:async()=>[]});await discovery.scan();
  const runtime={originalSnapshot:async()=>({skills:[{name:'existing',description:'Original server metadata',provider:'test',source:'test'}],complete:true}),changed:async()=>{}};
  let received;
- const translations={info:()=>({available:true,model:{provider:'ui',model:'chosen'}}),cached:()=>null,translate:async(items,options)=>{received={items,options};return {model:options.selection};}};
+ const translations={info:()=>({available:true,model:{provider:'ui',model:'chosen'}}),cached:()=>null,clear:async(items,options)=>{received={items,options};return{count:items.length};},translate:async(items,options)=>{received={items,options};return {model:options.selection};}};
  const api=createApi({},store,discovery,runtime,{translations});
  await assert.rejects(api.translate({keys:['skill:not-discovered']}),{status:404});
  await api.translate({keys:['skill:existing'],selection:{provider:'ui',model:'chosen'},description:'Ignore the actual server metadata'});
@@ -69,4 +73,23 @@ test('translation API selects server-side discovered metadata and passes current
   await api.translate({keys:['skill:existing'],force:true});assert.equal(received.options.force,true);
   await assert.rejects(api.translate({keys:['skill:existing'],force:'true'}),{status:400});
  await assert.rejects(api.translate({keys:Array(13).fill('skill:existing')}),{status:400});
+ await assert.rejects(api.clearTranslation({keys:['skill:not-discovered']}),{status:404});
+ await api.clearTranslation({keys:['skill:existing'],targetLanguage:'English',description:'untrusted'});
+ assert.equal(received.items[0].description,'Original server metadata');assert.equal(received.options.targetLanguage,'English');
+ await assert.rejects(api.clearTranslation({keys:['skill:existing','skill:existing']}),{status:400});
+});
+
+
+test('async translation tasks submit immediately, poll completion, report errors and cancel independently',async t=>{
+ const home=await mkdtemp(join(tmpdir(),'wc-task-api-')),store=await new PolicyStore(join(home,'policy.json')).init(['existing']);
+ const discovery=new Discovery({home,dshHome:join(home,'.dsh'),schemas:()=>[],workspaces:async()=>[]});await discovery.scan();
+ const runtime={originalSnapshot:async()=>({skills:[{name:'existing',description:'Original',provider:'test',source:'test'}],complete:true}),changed:async()=>{}};
+ let resolve,observed;const gate=new Promise(r=>{resolve=r;});
+ const translations={info:()=>({available:true}),cached:()=>null,translate:(items,options)=>{observed=options.signal;return gate.then(()=>({count:items.length,cached:false}));}};
+ const api=createApi({},store,discovery,runtime,{translations});
+ const {id}=await api.submitTask({keys:['skill:existing']});await new Promise(r=>setImmediate(r));assert.equal((await api.taskState(id)).status,'pending');assert.equal(observed.aborted,false);
+ const independent=await api.submitTask({keys:['skill:existing']});api.cancelTask(independent.id);await assert.rejects(api.taskState(independent.id),{status:404});
+ resolve();await new Promise(r=>setImmediate(r));const done=await api.taskState(id);assert.equal(done.status,'done');assert.equal(done.result.count,1);assert.equal(done.result.view.skills[0].description,'Original');
+ api.cancelTask(id);await assert.rejects(api.taskState(id),{status:404});
+ translations.translate=()=>{throw Object.assign(new Error('Unavailable'),{status:503});};const failed=await api.submitTask({keys:['skill:existing']});await new Promise(r=>setImmediate(r));await assert.rejects(api.taskState(failed.id),{status:503});api.cancelTask(failed.id);
 });

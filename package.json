@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-workspace-capabilities",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "DSH Capability Desk: workspace Skill/MCP controls and model-powered translations for DeepSeek Harness",
   "type": "module",
   "exports": {

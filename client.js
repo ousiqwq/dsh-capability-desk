@@ -2,9 +2,19 @@ window.__ModuleLoader__.load({
   id: 'dsh-plugin-workspace-capabilities',
   factory: require => {
     const React = require('react'), h = React.createElement;
+    const { Button, Menu, Input, Switch, SegmentedTabs, Tooltip, Toast, IconWarningOutlineRegular, IconChevronDownOutlineRegular } = require('@deepseek-ai/dsh-client-ui-primitives');
     /* i18n:start */
 const NS="capabilityDesk";
 const zh={
+  "翻译任务队列已满，请稍后重试。": "翻译任务队列已满，请稍后重试。",
+  "翻译任务已过期，请重试。": "翻译任务已过期，请重试。",
+  "翻译任务：{p0} 项处理中 · {p1} 项排队 · 已完成 {p2}/{p3}": "翻译任务：{p0} 项处理中 · {p1} 项排队 · 已完成 {p2}/{p3}",
+  "已去除翻译，恢复原文。": "已去除翻译，恢复原文。",
+  "已加入翻译队列": "已加入翻译队列",
+  "正在处理此项…": "正在处理此项…",
+  "去除该项目标语言的翻译缓存并恢复原文": "去除该项目标语言的翻译缓存并恢复原文",
+  "去除翻译 ": "去除翻译 ",
+  "（会话模型不可用，跟随 DSH 当前默认模型）": "（会话模型不可用，跟随 DSH 当前默认模型）",
   " · 当前使用工作区规则": " · 当前使用工作区规则",
   " · 当前继承全局": " · 当前继承全局",
   " 个工具": " 个工具",
@@ -134,6 +144,15 @@ const zh={
   "策略文件无法读取，Skill 和 MCP 已暂停。请恢复 policy.json 备份后重启服务。": "策略文件无法读取，Skill 和 MCP 已暂停。请恢复 policy.json 备份后重启服务。"
 };
 const en={
+  "翻译任务队列已满，请稍后重试。": "The translation queue is full. Try again later.",
+  "翻译任务已过期，请重试。": "The translation task has expired. Retry.",
+  "翻译任务：{p0} 项处理中 · {p1} 项排队 · 已完成 {p2}/{p3}": "Translation tasks: {p0} processing · {p1} queued · {p2}/{p3} done",
+  "已去除翻译，恢复原文。": "Translation removed; original text restored.",
+  "已加入翻译队列": "Queued for translation",
+  "正在处理此项…": "Processing this item…",
+  "去除该项目标语言的翻译缓存并恢复原文": "Remove this item’s cached translation for the target language and restore the original text",
+  "去除翻译 ": "Remove translation ",
+  "（会话模型不可用，跟随 DSH 当前默认模型）": " (session model unavailable; using the current DSH default)",
   " · 当前使用工作区规则": " · Using workspace rules",
   " · 当前继承全局": " · Inheriting global rules",
   " 个工具": " tools",
@@ -288,65 +307,130 @@ function installLocale(ctx) {
     const css = `
 .wc-page{box-sizing:border-box;width:100%;min-width:0;color:var(--dsw-alias-label-primary);display:flex;flex-direction:column;gap:14px;padding:6px 0;font-size:13px;line-height:1.6}
 .wc-page *{box-sizing:border-box}.wc-page h2{font-size:18px;margin:0}.wc-page p{margin:0}.wc-muted{color:var(--dsw-alias-label-secondary);font-size:12px;overflow-wrap:anywhere}
-.wc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}.wc-row>.wc-grow{flex:1;min-width:160px}
-.wc-scope-controls,.wc-language-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end}.wc-scope-controls>.wc-grow,.wc-language-controls>.wc-grow{min-width:0}
-.wc-scope-controls select,.wc-scope-controls>button,.wc-language-controls input,.wc-language-controls>button{height:38px}
-.wc-page button,.wc-page select,.wc-page input{font:inherit;color:inherit;background:var(--dsw-alias-bg-module-platform,#292a2b);border:1px solid var(--dsw-alias-border-l2,#48494b);border-radius:8px;min-height:36px;padding:7px 10px;min-width:0;max-width:100%}
-.wc-page button{cursor:pointer}.wc-page button:disabled,.wc-page select:disabled{opacity:.5;cursor:default}.wc-page :focus-visible{outline:2px solid #8baeff;outline-offset:2px}
-.wc-page label{display:flex;flex-direction:column;gap:6px}.wc-card{border:1px solid var(--dsw-alias-border-l2,#48494b);border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:9px;min-width:0}
-.wc-tabs button[aria-selected=true]{background:color-mix(in srgb,#759ce8 18%,transparent);border-color:#759ce8}.wc-name{font-size:14px;font-weight:600;overflow-wrap:anywhere;min-width:0;flex:1}
-.wc-badge{font-size:11px;border-radius:16px;padding:2px 8px;background:color-mix(in srgb,#888 17%,transparent);white-space:nowrap}.wc-on{color:#85d0a5}.wc-off{color:var(--dsw-alias-label-secondary)}
-.wc-error{color:#ff99a2;white-space:pre-wrap;overflow-wrap:anywhere}.wc-success{color:#85d0a5;font-size:12px}.wc-description{overflow-wrap:anywhere;font-size:12px}.wc-source{font-size:11px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}
-.wc-translated{white-space:pre-wrap;overflow-wrap:anywhere}.wc-translated-title{font-size:13px;font-weight:500;color:var(--dsw-alias-label-secondary)}.wc-tools{display:flex;flex-direction:column;gap:10px}.wc-tool{border-top:1px solid var(--dsw-alias-border-l2);padding-top:9px;min-width:0}.wc-progress{font-size:12px;color:#8baeff;overflow-wrap:anywhere}
-.wc-translation-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;min-width:0;margin-top:2px}.wc-page .wc-translation-actions button{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:none;min-height:28px;height:28px;padding:3px 7px;font-size:12px;line-height:20px;background:transparent;color:var(--dsw-alias-label-secondary);border-color:transparent}
-.wc-page .wc-translation-actions button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover,rgba(128,128,128,.14));color:var(--dsw-alias-label-primary)}.wc-page .wc-translation-actions .wc-translate-icon{width:28px;padding:4px}.wc-page .wc-translate-icon[aria-pressed=true]{color:#8baeff;background:color-mix(in srgb,#759ce8 12%,transparent)}.wc-translation-actions svg{display:block;width:18px;height:18px;flex:none}.wc-tool{display:flex;flex-direction:column;gap:7px}
-.wc-primary{background:#4269ae!important;color:#fff!important}.wc-list{display:flex;flex-direction:column;gap:10px}.wc-rule{min-width:124px}.wc-count{font-size:12px}.wc-page details summary{cursor:pointer}.wc-default{display:flex!important;flex-direction:row!important;align-items:center;gap:8px!important}.wc-default input{min-height:0;accent-color:#759ce8}
-@media(max-width:650px){
-.wc-row>.wc-grow{flex-basis:100%;min-width:0}.wc-rule{width:100%}.wc-card{padding:11px}
-[data-shortcut-modal="settings"]:has(.wc-page){flex-direction:column;width:calc(100vw - 24px);max-width:calc(100vw - 24px);height:calc(100dvh - 24px)}
-[data-shortcut-modal="settings"]:has(.wc-page)>nav{width:100%;min-width:0;flex-direction:row;align-items:center;gap:8px;padding:12px 12px 0}
-[data-shortcut-modal="settings"]:has(.wc-page)>nav>:first-child{flex:none;white-space:nowrap;padding:0}
-[data-shortcut-modal="settings"]:has(.wc-page)>nav>:last-child{flex:1;min-width:0;flex-direction:row;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
-[data-shortcut-modal="settings"]:has(.wc-page)>nav button{flex:none;height:36px;padding:7px 10px}
-[data-shortcut-modal="settings"]:has(.wc-page)>nav+div{min-height:0}
-[data-shortcut-modal="settings"]:has(.wc-page)>nav+div>:first-child{height:42px;padding:8px 12px 4px}
-[data-shortcut-modal="settings"]:has(.wc-page)>nav+div>:last-child{padding:0 14px 14px}
-}
+.wc-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-width:0}.wc-row>.wc-grow{flex:1;min-width:0}
+.wc-scope-controls,.wc-language-controls{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end}
+.wc-field,.wc-scope-field{display:flex;flex-direction:column;gap:6px;min-width:0}.wc-input{width:100%;min-width:0}.wc-language-input{height:36px}
+.wc-scope-menu{width:100%;min-width:0}.wc-scope-trigger{width:100%;min-width:0;justify-content:space-between;gap:8px;text-align:left}.wc-scope-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wc-scope-trigger>svg{flex:none}
+.wc-scope-option{display:flex;flex-direction:column;gap:3px;min-width:0;max-width:100%}.wc-scope-path{color:var(--dsw-alias-label-caption);font-size:11px;line-height:15px;font-weight:400;white-space:normal;overflow-wrap:anywhere}.wc-scope-option>span{white-space:normal;overflow-wrap:anywhere}
+.wc-card{border:1px solid var(--dsw-alias-border-l2);border-radius:var(--dsw-radius-md);padding:13px;display:flex;flex-direction:column;gap:9px;min-width:0}
+.wc-name{font-size:14px;font-weight:600;overflow-wrap:anywhere;min-width:0;flex:1}.wc-badge{font-size:11px;border-radius:var(--dsw-radius-md);padding:2px 8px;background:var(--dsw-alias-interactive-bg-hover);white-space:nowrap}.wc-on,.wc-success{color:var(--dsw-alias-state-success-primary)}.wc-off{color:var(--dsw-alias-label-secondary)}
+.wc-error{color:var(--dsw-alias-state-error-primary);white-space:pre-wrap;overflow-wrap:anywhere}.wc-success,.wc-description{font-size:12px}.wc-description{overflow-wrap:anywhere}.wc-source{font-size:11px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}
+.wc-translated{white-space:pre-wrap;overflow-wrap:anywhere}.wc-translated-title{font-size:13px;font-weight:500;color:var(--dsw-alias-label-secondary)}.wc-tools{display:flex;flex-direction:column;gap:10px}.wc-tool{display:flex;flex-direction:column;gap:7px;border-top:1px solid var(--dsw-alias-border-l2);padding-top:9px;min-width:0}.wc-progress{font-size:12px;color:var(--dsw-alias-state-business-primary);overflow-wrap:anywhere}
+.wc-item-footer{display:flex;align-items:center;gap:8px;min-width:0}.wc-item-path{flex:1;min-width:0;font-size:10px;line-height:14px;overflow-wrap:anywhere}.wc-translation-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex:none;min-width:0}.wc-translation-actions button{flex:none}.wc-translate-icon,.wc-clear-translation-icon{width:28px;padding:0}
+.wc-workspace-add{display:flex;flex-direction:column;gap:6px;min-width:0}
+.wc-list{display:flex;flex-direction:column;gap:10px}.wc-rule{width:124px;flex:none;min-width:0}.wc-rule-trigger{width:100%;justify-content:space-between;gap:8px}.wc-rule-trigger>svg{flex:none}.wc-count{font-size:12px}.wc-page details summary{cursor:pointer}
+.wc-toggle{display:flex;align-items:center;gap:8px;min-width:0}.wc-toggle>button{flex:none}.wc-toggle>span{min-width:0;overflow-wrap:anywhere}
+@container(max-width:420px){.wc-rule{width:100%}.wc-card{padding:11px}}
+.wc-page{container-type:inline-size}
 `;
     const statusLabels = { get connected(){return tr("已连接");}, get 'connected-no-tools'(){return tr("已连接／暂无工具");}, get connecting(){return tr("连接中");}, get error(){return tr("连接失败，请检查源配置或重新启用");}, get disconnected(){return tr("未连接");}, get native(){return tr("DSH 原生连接");}, get configured(){return tr("原生配置／未发现工具");} };
     async function request(path, value, signal) {
       const response = await fetch(BASE + path, { credentials: 'same-origin', cache: 'no-store', signal, ...(value === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) }) });
       const data = await response.json(); if (!response.ok) throw new Error(data.error || tr("请求失败")); return data;
     }
-    function CapabilitySettings({ getModelContext, registeredWorkspaces, languageTarget, saveLanguageTarget, uiLocale }) {
+    // Keep native menu rendering/keyboard behavior; pin its portal to this exact button.
+    // Numeric viewport coordinates also work when browser CSS anchors are unavailable.
+    let floatingMenuSequence=0;
+    function AnchoredMenu(props){
+      const identity=React.useRef(null),close=React.useRef(props.onClose);close.current=props.onClose;
+      if(identity.current===null)identity.current='wc-floating-menu-'+(++floatingMenuSequence);
+      const className=identity.current;
+      React.useLayoutEffect(()=>{
+        if(!props.open)return;
+        const list=document.querySelector('.'+className),anchor=props.anchorRef?.current;
+        if(!list||!anchor)return;
+        let frame,previousBox='';
+        const position=()=>{
+          if(!anchor.isConnected||!anchor.getClientRects().length){close.current();return;}
+          const box=anchor.getBoundingClientRect(),margin=12,gap=4,width=window.innerWidth,height=window.innerHeight;previousBox=[box.x,box.y,box.width,box.height].join(',');
+          Object.assign(list.style,{positionAnchor:'auto',positionTryFallbacks:'none',top:'12px',left:'12px',right:'auto',bottom:'auto',margin:'0'});
+          if(props.minWidthFromAnchor)list.style.minWidth=Math.min(box.width,width-2*margin)+'px';
+          const viewport=list.querySelector(':scope > [role="presentation"]'),natural=list.offsetHeight+Math.max(0,(viewport?.scrollHeight??0)-(viewport?.clientHeight??0));
+          const below=Math.max(0,height-margin-box.bottom-gap),above=Math.max(0,box.top-gap-margin),useBelow=natural<=below||below>=above;
+          const room=useBelow?below:above;list.style.maxHeight=room+'px';
+          const bounds=list.getBoundingClientRect(),x=props.align==='end'?box.right-bounds.width:box.left;
+          list.style.left=Math.max(margin,Math.min(x,width-margin-bounds.width))+'px';
+          list.style.top=Math.max(margin,useBelow?box.bottom+gap:box.top-gap-bounds.height)+'px';
+          list.dataset.menuOwner=anchor.getAttribute('aria-label')??'';
+        };
+        const scrolled=event=>{if(event.target instanceof Element&&event.target.closest('[role="menu"]'))return;const box=anchor.getBoundingClientRect();if([box.x,box.y,box.width,box.height].join(',')!==previousBox)close.current();};
+        const resized=()=>close.current();position();
+        const observer=new ResizeObserver(position);observer.observe(anchor);observer.observe(list);
+        const track=()=>{if(!anchor.isConnected){close.current();return;}const box=anchor.getBoundingClientRect();if([box.x,box.y,box.width,box.height].join(',')!==previousBox)position();frame=requestAnimationFrame(track);};frame=requestAnimationFrame(track);
+        document.addEventListener('scroll',scrolled,true);window.addEventListener('resize',resized);window.visualViewport?.addEventListener('resize',resized);
+        return()=>{cancelAnimationFrame(frame);observer.disconnect();document.removeEventListener('scroll',scrolled,true);window.removeEventListener('resize',resized);window.visualViewport?.removeEventListener('resize',resized);};
+      },[props.open,props.anchorRef,props.minWidthFromAnchor,props.align,className]);
+      return h(Menu,{...props,anchorRef:undefined,listClassName:[props.listClassName,className].filter(Boolean).join(' ')});
+    }
+    function Toggle({label,checked,disabled,onChange}) {
+      return h('div',{className:'wc-toggle'},h(Switch,{label,checked,disabled,onChange}),h('span',null,label));
+    }
+    function RuleSelect({label,value,options,disabled,onChange}) {
+      const [open,setOpen]=React.useState(false),anchorRef=React.useRef(null);
+      React.useEffect(()=>{if(disabled)setOpen(false);},[disabled]);
+      return h(AnchoredMenu,{anchorRef,open:open&&!disabled,items:options,selectedId:value,portal:true,minWidthFromAnchor:true,className:'wc-rule',onClose:()=>setOpen(false),onSelect:id=>{setOpen(false);onChange(id);},anchor:h(Button,{ref:anchorRef,variant:'outline',className:'wc-rule-trigger',disabled,'aria-label':label,'aria-haspopup':'menu','aria-expanded':open&&!disabled,onClick:()=>setOpen(current=>!current)},options.find(item=>item.id===value)?.label,h(IconChevronDownOutlineRegular,{size:14,'aria-hidden':true}))});
+    }
+    function ScopeSelect({value,workspaces,disabled,onChange}) {
+      const [open,setOpen]=React.useState(false),anchorRef=React.useRef(null);
+      React.useEffect(()=>{if(disabled)setOpen(false);},[disabled]);
+      const current=workspaces.find(item=>item.path===value);
+      const items=[{id:'global',label:tr("全局默认")},...workspaces.map(item=>({id:'workspace:'+item.path,label:h('span',{className:'wc-scope-option'},h('span',null,item.title),h('small',{className:'wc-scope-path'},item.path))}))];
+      return h(AnchoredMenu,{anchorRef,open:open&&!disabled,items,selectedId:value?'workspace:'+value:'global',portal:true,minWidthFromAnchor:true,className:'wc-scope-menu',onClose:()=>setOpen(false),onSelect:id=>{setOpen(false);onChange(id==='global'?'':id.slice(10));},
+        anchor:h(Button,{ref:anchorRef,variant:'outline',className:'wc-native-control wc-scope-trigger','aria-label':tr("规则范围"),'aria-haspopup':'menu','aria-expanded':open&&!disabled,disabled,onClick:()=>setOpen(current=>!current)},h('span',{className:'wc-scope-name'},value?(current?.title??value.split('/').filter(Boolean).at(-1)):tr("全局默认")),h(IconChevronDownOutlineRegular,{size:14,'aria-hidden':true}))});
+    }
+    async function translationTask(value, signal) {
+      let id;
+      try {
+        const created = await request('/translation/tasks', value, signal); id = created.id;
+        for (;;) {
+          signal.throwIfAborted();
+          const state = await request('/translation/tasks?id=' + encodeURIComponent(id), undefined, signal);
+          if (state.status === 'done') return state.result;
+          await new Promise((resolve, reject) => {
+            const aborted = () => { clearTimeout(timer); reject(signal.reason); };
+            const timer = setTimeout(() => { signal.removeEventListener('abort', aborted); resolve(); }, 350);
+            signal.addEventListener('abort', aborted, { once: true }); if (signal.aborted) aborted();
+          });
+        }
+      } catch (error) {
+        throw error;
+      } finally {
+        if (id) fetch(BASE + '/translation/cancel', { method: 'POST', credentials: 'same-origin', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {});
+      }
+    }
+    function CapabilitySettings({ getModelContext, modelContextKey, modelFallback, registeredWorkspaces, languageTarget, saveLanguageTarget, uiLocale }) {
       const [workspace, setWorkspace] = React.useState(''), [view, setView] = React.useState(null);
       const [tab, setTab] = React.useState('skills'), [search, setSearch] = React.useState(''), [error, setError] = React.useState('');
-      const [busy, setBusy] = React.useState(false), [message, setMessage] = React.useState(''), [path, setPath] = React.useState('');
-      const [progress, setProgress] = React.useState(''), [showTranslation, setShowTranslation] = React.useState(() => { try { return localStorage.getItem('dsh-capabilities-show-translations') !== 'false'; } catch { return true; } });
-      const translating = React.useRef(null);
+      const [operating, setBusy] = React.useState(false), [loading, setLoading] = React.useState(true), [message, setMessage] = React.useState(''), [path, setPath] = React.useState('');
+      const busy=operating||loading;
+      const [progress, setProgress] = React.useState(''), [showTranslation, setShowTranslation] = React.useState(true);
+      const translating = React.useRef(null), mutation = React.useRef(0);
+      const [translationJobs, setTranslationJobs] = React.useState(new Map());
       const [targetDraft, setTargetDraft] = React.useState(languageTarget);
       React.useEffect(() => { setTargetDraft(languageTarget); }, [languageTarget]);
       const getTranslationContext = () => ({ ...getModelContext(), targetLanguage: languageTarget, uiLocale });
-      const [translationOverrides, setTranslationOverrides] = React.useState({});
       const epoch = React.useRef(0), locked = React.useRef(false), revision = React.useRef(null);
       React.useEffect(() => {
-        const current = ++epoch.current; setView(null); setError(''); setBusy(false); locked.current = false; setProgress(''); setTranslationOverrides({});
+        const current = ++epoch.current; setLoading(true); setError(''); setBusy(false); locked.current = false; setProgress(''); setTranslationJobs(new Map());
+        const pool = { jobs: new Map(), queue: [], active: 0, cancelled: false, total: 0, completed: 0, skipped: 0, failed: 0 };
+        translating.current = pool;
         async function load() {
-          if (locked.current) return;
+          if (locked.current || pool.jobs.size) return;
+          const version = mutation.current;
           try {
             const context = getTranslationContext();
             const params = new URLSearchParams({ workspace, targetLanguage: languageTarget, uiLocale, ...(context.sessionId ? { sessionId: context.sessionId } : {}), ...(context.selection ? { provider: context.selection.provider, model: context.selection.model } : {}) });
             const data = await request('/state?' + params);
-            if (epoch.current !== current || locked.current) return;
-            revision.current = data.revision; setView(data);
+            if (epoch.current !== current || locked.current || pool.jobs.size || mutation.current !== version) return;
+            revision.current = data.revision; setView(data);setLoading(false);
           } catch (cause) { if (epoch.current === current) setError(cause.message); }
         }
         load(); const timer = setInterval(() => { if (!document.hidden) load(); }, 4000);
-        return () => { ++epoch.current; clearInterval(timer); translating.current?.abort(); };
-      }, [workspace, languageTarget, uiLocale]);
+        return () => { ++epoch.current; clearInterval(timer); pool.cancelled = true; for (const job of pool.jobs.values()) job.cancel.abort(); pool.queue.length = 0; };
+      }, [workspace, languageTarget, uiLocale, modelContextKey]);
       async function action(value) {
-        if (locked.current || !view) return;
-        const current = epoch.current; locked.current = true; setBusy(true); setError(''); setMessage('');
+        if (locked.current || busy || !view) return;
+        const current = epoch.current; ++mutation.current; locked.current = true; setBusy(true); setError(''); setMessage('');
         try {
           const data = await request('/action', { workspace, revision: revision.current, ...getTranslationContext(), ...value });
           if (epoch.current === current) { revision.current = data.revision; setView(data); setMessage(value.action === 'refresh' ? tr("发现列表已刷新。") : tr("已保存，当前及后续 Agent 调用即时使用新规则。")); }
@@ -354,62 +438,94 @@ function installLocale(ctx) {
         } catch (cause) { if (epoch.current === current) setError(cause.message); }
         finally { locked.current = false; setBusy(false); }
       }
-      const button = (text, onClick, options = {}) => h('button', { type: 'button', onClick, disabled: busy, ...options }, text);
+      const button = (text, onClick, options = {}) => h(Button, { variant: 'outline', onClick, disabled: busy, ...options }, text);
+      const tabId=React.useId(),panelId='wc-panel-'+tabId;
       const workspaceOptions = new Map((view?.workspaces ?? []).map(item => [item.path, item]));
       // The sidebar's live store wins over older HTTP responses, including polling in flight.
       for (const item of registeredWorkspaces) if (item.title) workspaceOptions.set(item.path, item);
       const items = (view?.[tab] ?? []).filter(item => [item.name, item.description, item.path, item.source, item.workspace, item.translation?.title, item.translation?.description].filter(Boolean).join(' ').toLowerCase().includes(search.toLowerCase()));
-      async function translate(keys, { force = false, showAll = false } = {}) {
-        if (locked.current || !keys.length) return;
+      function translate(keys, { force = false, clear = false } = {}) {
+        const pool = translating.current;
+        if (locked.current || busy || !keys.length || !pool || pool.cancelled) return;
+        if (!pool.jobs.size) { pool.total = 0; pool.completed = 0; pool.skipped = 0; pool.failed = 0; }
         const current = epoch.current, context = getTranslationContext();
-        locked.current = true; setBusy(true); setError(''); setMessage(''); const cancel = new AbortController(); translating.current = cancel;
-        try {
-          let result, total = 0, skipped = 0;
-          for (let offset = 0; offset < keys.length; offset += 12) {
-            setProgress((force ? tr("正在重新翻译 ") : tr("正在翻译 ")) + (offset + 1) + '–' + Math.min(offset + 12, keys.length) + ' / ' + keys.length + tr(" 条…"));
-            result = await request('/translate', { workspace, ...context, force, keys: keys.slice(offset, offset + 12) }, cancel.signal);
-            if (epoch.current !== current) return;
-            revision.current = result.view.revision; setView(result.view); total += result.count; skipped += result.skipped ?? 0;
+        setError(''); setMessage(''); ++mutation.current;
+        for (const key of new Set(keys)) {
+          if (pool.jobs.has(key)) continue;
+          const job = { key, force, clear, context, workspace, cancel: new AbortController(), status: 'queued' };
+          pool.jobs.set(key, job); pool.queue.push(job); pool.total++;
+        }
+        function publish() {
+          if (pool.cancelled || epoch.current !== current) return;
+          setTranslationJobs(new Map([...pool.jobs].map(([key, job]) => [key, job.status])));
+          setProgress(pool.jobs.size ? tr("翻译任务：{p0} 项处理中 · {p1} 项排队 · 已完成 {p2}/{p3}", { p0: pool.active, p1: pool.queue.length, p2: pool.completed, p3: pool.total }) : '');
+        }
+        function mergeTranslation(data, key) {
+          // Concurrent responses carry snapshots: merge only this item's translation,
+          // preserving rules and other completed translations from newer responses.
+          const targets = new Map();
+          for (const item of data.skills) targets.set('skill:' + item.name, item.translation);
+          for (const item of data.mcp) { targets.set('mcp:' + item.id, item.translation); for (const tool of item.toolDetails ?? []) targets.set('tool:' + tool.name, tool.translation); }
+          setView(previous => previous && ({ ...previous,
+            skills: previous.skills.map(item => key === 'skill:' + item.name ? { ...item, translation: targets.get(key) ?? null } : item),
+            mcp: previous.mcp.map(item => ({ ...item, ...(key === 'mcp:' + item.id ? { translation: targets.get(key) ?? null } : {}),
+              toolDetails: item.toolDetails?.map(tool => key === 'tool:' + tool.name ? { ...tool, translation: targets.get(key) ?? null } : tool) })) }));
+        }
+        function pump() {
+          if (pool.cancelled || epoch.current !== current) return;
+          while (pool.active < 8 && pool.queue.length) {
+            const job = pool.queue.shift(); pool.active++; job.status = job.clear ? 'clearing' : 'translating';
+            (job.clear ? request('/translation/clear', { workspace: job.workspace, ...job.context, keys: [job.key] }, job.cancel.signal) : translationTask({ workspace: job.workspace, ...job.context, force: job.force, keys: [job.key] }, job.cancel.signal))
+              .then(result => {
+                if (pool.cancelled || epoch.current !== current) return;
+                mergeTranslation(result.view, job.key); pool.skipped += result.skipped ?? 0;
+                if (!job.clear) setShowTranslation(true);
+              }).catch(cause => {
+                if (!pool.cancelled && epoch.current === current && cause.name !== 'AbortError') { pool.failed++; setError(cause.message); }
+              }).finally(() => {
+                pool.active--; pool.completed++; pool.jobs.delete(job.key);
+                if (pool.cancelled || epoch.current !== current) return;
+                pump(); publish();
+                if (!pool.jobs.size && !pool.failed) setMessage(job.clear && pool.total === 1 ? tr("已去除翻译，恢复原文。") : tr("已处理 {p0} 条，{p1} 条已是目标语言 · {p2}", { p0: pool.completed, p1: pool.skipped, p2: view.translation.target.label }));
+              });
           }
-          if (showAll) { setShowTranslation(true); setTranslationOverrides({}); try { localStorage.setItem('dsh-capabilities-show-translations', 'true'); } catch {} }
-          else setTranslationOverrides(previous => ({ ...previous, ...Object.fromEntries(keys.map(key => [key, true])) }));
-          setMessage(tr("已处理 {p0} 条，{p1} 条已是目标语言 · {p2}", {p0: total, p1: skipped, p2: result.target.label}));
-        } catch (cause) { if (epoch.current === current && cause.name !== 'AbortError') setError(cause.message); }
-        finally { if (translating.current === cancel) { if (epoch.current === current) { setProgress(''); setBusy(false); } locked.current = false; translating.current = null; } }
+          publish();
+        }
+        pump();
       }
-      function translationShown(key) { return translationOverrides[key] ?? showTranslation; }
       function translateIcon() {
-        return h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
-          h('path', { d: 'M2 5h12M7 2v3m-3 3 6 6M12 5c-1 4-4 7-8 9m8 8 5-10 5 10m-8-4h6' }));
+        return h('svg', { width:18, height:18, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:1.7, strokeLinecap:'round', strokeLinejoin:'round', 'aria-hidden':true },
+          h('path', { d:'M2 5h12M7 2v3m-3 3 6 6M12 5c-1 4-4 7-8 9m8 8 5-10 5 10m-8-4h6' }));
       }
       function translationActions(item, key) {
-        const sameLanguage = item.translation?.status === 'same_language', translated = item.translation && !sameLanguage;
-        const shown = !!translated && translationShown(key);
-        const label = translated ? (shown ? tr("查看原文") : tr("查看译文")) : tr("翻译说明");
-        return h('div', { className: 'wc-translation-actions' },
-          sameLanguage && h('span', { className: 'wc-muted' }, tr("已是目标语言")),
-          translated && button(tr("重新翻译"), () => translate([key], { force: true }), { disabled: busy || !view.translation.available, 'aria-label': tr("重新翻译 ") + item.name, title: tr("使用当前模型重新翻译并更新缓存") }),
-          button(translateIcon(), () => translated ? setTranslationOverrides(previous => ({ ...previous, [key]: !shown })) : translate([key], { force: true }),
-            { className: 'wc-translate-icon', disabled: busy || (!translated && !view.translation.available), 'aria-label': label + ' ' + item.name, title: label, 'aria-pressed': shown }));
+        const state = translationJobs.get(key), pending = !!state;
+        const unavailable = !view.translation.available ? messageText(view.translation.error || tr("请先选择模型")) : null;
+        const hint = state === 'queued' ? tr("已加入翻译队列") : pending ? tr("正在处理此项…") : unavailable ?? tr("使用当前模型重新翻译并更新缓存");
+        const clearHint = tr("去除该项目标语言的翻译缓存并恢复原文");
+        return h('div', { className: 'wc-translation-actions', 'data-translation-state': state ?? 'idle' },
+          h(Tooltip, { label: clearHint, portal: true, side: 'bottom', delayMs: 400 }, button(
+            h('svg', { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
+              h('path', { d: 'm16 3 5 5-11 11H5l-3-3L16 3Zm-9 8 7 7M9 21h13' })),
+            () => translate([key], { clear: true }), { variant: 'ghost', size: 'sm', className: 'wc-clear-translation-icon', disabled: busy || pending || !item.translation, 'aria-label': tr("去除翻译 ") + item.name, title: clearHint })),
+          h(Tooltip, { label: hint, portal: true, side: 'bottom', delayMs: 400 }, button(translateIcon(), () => translate([key], { force: true }),
+            { variant: item.translation?.status === 'translated' && showTranslation ? 'toolbar' : 'ghost', size: 'sm', className: 'wc-translate-icon', disabled: busy || pending || !view.translation.available, 'aria-busy': pending, 'aria-label': tr("重新翻译 ") + item.name, title: hint })));
       }
       function description(item, key) {
-        const translated = translationShown(key) && item.translation?.status !== 'same_language' && item.translation;
+        const translated = showTranslation && item.translation?.status !== 'same_language' && item.translation;
         return h(React.Fragment, null,
           translated?.title && translated.title !== item.name && h('p', { className: 'wc-translated-title' }, translated.title),
           translated?.description ? h(React.Fragment, null, h('p', { className: 'wc-description wc-translated' }, translated.description),
-            h('details', { className: 'wc-source' }, h('summary', null, tr("查看原文")), h('p', { className: 'wc-description' }, item.description))) : item.description && h('p', { className: 'wc-description' }, item.description));
+            h('details', { className: 'wc-source' }, h('summary', null, tr("查看原文")), h('p', { className: 'wc-description' }, item.description))) : item.description && h('p', { className: 'wc-description' }, item.description),
+          item.translation?.status === 'same_language' && h('p', { className:'wc-muted' }, tr("已是目标语言")));
       }
       function renderItem(item) {
         const isMcp = tab === 'mcp', key = isMcp ? item.id : item.name;
         const foreign = isMcp && item.workspace && workspace !== item.workspace;
-        const select = h('select', { 'aria-label': item.name + tr(" 规则"), className: 'wc-rule', value: item.rule === null ? 'inherit' : String(item.rule), disabled: busy || !!view.error || !!foreign,
-          onChange: event => action({ action: 'rule', kind: tab, key, value: event.target.value === 'inherit' ? null : event.target.value === 'true' }) },
-          h('option', { value: 'inherit' }, workspace ? tr("继承全局") : tr("使用默认")), h('option', { value: 'true' }, tr("启用")), h('option', { value: 'false' }, tr("禁用")));
+        const select=h(RuleSelect,{label:item.name+tr(" 规则"),value:item.rule===null?'inherit':String(item.rule),disabled:busy||!!view.error||!!foreign,options:[{id:'inherit',label:workspace?tr("继承全局"):tr("使用默认")},{id:'true',label:tr("启用")},{id:'false',label:tr("禁用")}],onChange:value=>action({action:'rule',kind:tab,key,value:value==='inherit'?null:value==='true'})});
         return h('article', { className: 'wc-card', key, 'data-capability': key },
           h('div', { className: 'wc-row' }, h('strong', { className: 'wc-name' }, item.name),
             h('span', { className: 'wc-badge ' + (item.enabled ? 'wc-on' : 'wc-off') }, item.enabled ? tr("可用") : isMcp && item.requested && !item.approved ? tr("待批准") : tr("已禁用")), select),
           description(item, (isMcp ? 'mcp:' : 'skill:') + key),
-          h('p', { className: 'wc-source' }, tr("来源：") + (item.path || item.source) + (!isMcp ? ' · ' + item.provider : '')),
           isMcp && h(React.Fragment, null,
             item.workspace && h('p', { className: 'wc-source' }, tr("所属工作区：") + item.workspace),
             h('p', { className: 'wc-muted' }, item.transport + ' · ' + item.launch),
@@ -418,44 +534,43 @@ function installLocale(ctx) {
             item.envNames?.length > 0 && h('p', { className: 'wc-source' }, tr("环境变量名称：") + item.envNames.join('、')),
             item.problem && h('p', { className: 'wc-error' }, item.problem),
             foreign && h('p', { className: 'wc-muted' }, tr("切换到该来源工作区后可设置。")),
-            !item.native && !item.approved && item.valid && !foreign && button(tr("批准配置并启用连接"), () => action({ action: 'approve', kind: 'mcp', key, value: true, fingerprint: item.fingerprint }), { className: 'wc-primary', disabled: busy || !!view.error }),
+            !item.native && !item.approved && item.valid && !foreign && button(tr("批准配置并启用连接"), () => action({ action: 'approve', kind: 'mcp', key, value: true, fingerprint: item.fingerprint }), { variant:'primary', disabled: busy || !!view.error }),
             item.approved && !item.native && h('p', { className: 'wc-source' }, tr("此配置已批准；修改源配置后需要重新批准。"))),
           workspace && h('p', { className: 'wc-source' }, tr("全局：") + (item.global ? tr("启用") : tr("禁用")) + (item.rule === null ? tr(" · 当前继承全局") : tr(" · 当前使用工作区规则"))),
-          translationActions(item, (isMcp ? 'mcp:' : 'skill:') + key));
+          h('div', { className:'wc-item-footer' },
+            h('p', { className:'wc-source wc-item-path' }, tr("来源：") + (item.path || item.source) + (!isMcp ? ' · ' + item.provider : '')),
+            translationActions(item, (isMcp ? 'mcp:' : 'skill:') + key)));
       }
       return h('section', { className: 'wc-page' },
         h('h2', null, tr("Skill 与 MCP")),
         h('p', { className: 'wc-muted' }, tr("这里的全局与工作区规则仅作用于 DeepSeek Harness。默认只发现 DSH 自身的 Skill 和 MCP；其他应用来源可以单独开启。")),
         view && h('div', { className: 'wc-card' },
-          h('label', { className: 'wc-default' }, h('input', { type: 'checkbox', checked: view.discovery.includeExternal, disabled: busy || !!view.error,
-            onChange: event => action({ action: 'discovery', value: event.target.checked }) }), tr("扫描其他应用的 Skill / MCP（全局）")),
+          h(Toggle,{label:tr("扫描其他应用的 Skill / MCP（全局）"),checked:view.discovery.includeExternal,disabled:busy||!!view.error,onChange:value=>action({action:'discovery',value})}),
           h('p', { className: 'wc-muted' }, tr("可选读取 CC Switch 共享 Skill 目录，以及 Codex、Claude、Cursor 配置。扫描只读取来源；新能力默认禁用，MCP 首次连接仍需批准。"))),
-        h('div', { className: 'wc-row wc-scope-controls' }, h('label', { className: 'wc-grow' }, tr("规则范围"), h('select', { 'aria-label': tr("规则范围"), value: workspace, disabled: busy, onChange: event => setWorkspace(event.target.value) },
-          h('option', { value: '' }, tr("全局默认")), ...[...workspaceOptions.values()].sort((a, b) => a.path.localeCompare(b.path)).map(item => h('option', { key: item.path, value: item.path }, item.title + ' — ' + item.path)))),
+        h('div', { className: 'wc-row wc-scope-controls' }, h('div', { className: 'wc-grow wc-scope-field' }, h('span',null,tr("规则范围")),h(ScopeSelect,{value:workspace,disabled:busy,workspaces:[...workspaceOptions.values()].sort((a,b)=>a.path.localeCompare(b.path)),onChange:setWorkspace})),
           button(tr("重新发现"), () => action({ action: 'refresh' }), { disabled: busy || !view })),
-        h('details', null, h('summary', { className: 'wc-muted' }, tr("添加已有目录的工作区规则")),
-          h('div', { className: 'wc-row' }, h('input', { className: 'wc-grow', 'aria-label': tr("工作区绝对路径"), placeholder: tr("/home/用户名/项目"), value: path, onChange: event => setPath(event.target.value) }),
+        h('div', { className:'wc-workspace-add' }, h('span', { className: 'wc-muted' }, tr("添加已有目录的工作区规则")),
+          h('div', { className: 'wc-row' }, h(Input, { className: 'wc-grow wc-input', 'aria-label': tr("工作区绝对路径"), placeholder: tr("/home/用户名/项目"), value: path, onChange: event => setPath(event.target.value) }),
             button(tr("添加工作区"), () => action({ action: 'workspace', workspace: path }), { disabled: busy || !view || !path.startsWith('/') }))),
-        error && h('p', { className: 'wc-error', role: 'alert' }, messageText(error)), view?.error && h('p', { className: 'wc-error', role: 'alert' }, messageText(view.error)),
-        message && h('p', { className: 'wc-success', role: 'status' }, messageText(message)),
-        progress && h('p', { className: 'wc-progress', role: 'status' }, messageText(progress)),
+        error && h(Toast,{key:error,text:messageText(error),icon:h(IconWarningOutlineRegular,{size:16}),holdMs:6000,onDone:()=>setError('')}), view?.error && h('p', { className: 'wc-error', role: 'alert' }, messageText(view.error)),
+        message && h(Toast,{key:message,text:messageText(message),tone:'success',onDone:()=>setMessage('')}),
+        progress && h(Toast,{text:messageText(progress),holdMs:90000,onDone:()=>{}}),
         !view ? h('p', { className: 'wc-muted' }, tr("正在读取能力列表…")) : h(React.Fragment, null,
-          h('div', { className: 'wc-row wc-tabs', role: 'tablist', 'aria-label': tr("能力类型") },
-            ...[['skills', 'Skills', view.skills.length], ['mcp', 'MCP', view.mcp.length]].map(([value, label, count]) => button(label + ' (' + count + ')', () => setTab(value), { key: value, role: 'tab', 'aria-selected': tab === value }))),
+          h(SegmentedTabs,{label:tr("能力类型"),value:tab,size:'sm',onChange:setTab,items:[['skills','Skills',view.skills.length],['mcp','MCP',view.mcp.length]].map(([value,label,count])=>({value,label:label+' ('+count+')',id:tabId+'-'+value,panelId}))}),
           h('div', { className: 'wc-card' },
-            h('form', { className: 'wc-row wc-language-controls', onSubmit: async event => { event.preventDefault(); if (busy) return; setBusy(true); setError(''); try { await saveLanguageTarget(targetDraft); setMessage(tr("翻译目标语言已保存。")); } catch (cause) { setError(cause.message); } finally { setBusy(false); } } },
-              h('label', { className: 'wc-grow' }, tr("翻译成"), h('input', { value: targetDraft, maxLength: 160, list: 'wc-language-targets', 'aria-label': tr("翻译成"), placeholder: tr("跟随界面语言"), onChange: event => setTargetDraft(event.target.value), disabled: busy })),
+            h('form', { className: 'wc-row wc-language-controls', onSubmit: async event => { event.preventDefault(); if (busy) return; setBusy(true); setError('');setMessage(''); try { await saveLanguageTarget(targetDraft); setMessage(tr("翻译目标语言已保存。")); } catch (cause) { setError(cause.message); } finally { setBusy(false); } } },
+              h('label', { className: 'wc-grow wc-field' }, tr("翻译成"), h(Input, { className:'wc-input wc-language-input', value: targetDraft, maxLength: 160, list: 'wc-language-targets', 'aria-label': tr("翻译成"), placeholder: tr("跟随界面语言"), onChange: event => setTargetDraft(event.target.value), disabled: busy })),
               h('datalist', { id: 'wc-language-targets' }, ...[tr("简体中文"), tr("繁體中文"), 'English', tr("日本語"), 'Español', 'Français', 'Deutsch', 'Русский', 'Português'].map(value => h('option', { key: value, value }))),
-              h('button', { type: 'submit', disabled: busy || targetDraft === languageTarget }, tr("保存语言"))),
-            h('p', { className: 'wc-muted' }, tr("翻译模型：") + ((getModelContext().selection ?? view.translation.model) ? (getModelContext().selection ?? view.translation.model).model + tr("（跟随当前界面）") : tr("请先选择模型"))),
-            h('label', { className: 'wc-default' }, h('input', { type: 'checkbox', checked: showTranslation, onChange: event => { setShowTranslation(event.target.checked); setTranslationOverrides({}); try { localStorage.setItem('dsh-capabilities-show-translations', String(event.target.checked)); } catch {} } }), tr("显示译文")),
-            button(tr("翻译当前列表"), () => translate(items.flatMap(item => tab === 'skills' ? ['skill:' + item.name] : ['mcp:' + item.id, ...(item.toolDetails ?? []).map(tool => 'tool:' + tool.name)]), { showAll: true }), { disabled: busy || !view.translation.available || !items.length }),
+              h(Button, { variant:'outline', type: 'submit', disabled: busy || targetDraft === languageTarget }, tr("保存语言"))),
+            h('p', { className: 'wc-muted' }, tr("翻译模型：") + ((getModelContext().selection ?? view.translation.model) ? (getModelContext().selection ?? view.translation.model).model + (modelFallback?tr("（会话模型不可用，跟随 DSH 当前默认模型）"):tr("（跟随当前界面）")) : tr("请先选择模型"))),
+            !view.translation.available && view.translation.error && h('p',{className:'wc-muted',role:'status'},messageText(view.translation.error)),
+            h(Toggle,{label:tr("显示译文"),checked:showTranslation,onChange:setShowTranslation}),
+            button(tr("翻译当前列表"), () => translate(items.flatMap(item => tab === 'skills' ? ['skill:' + item.name] : ['mcp:' + item.id, ...(item.toolDetails ?? []).map(tool => 'tool:' + tool.name)])), { disabled: busy || !view.translation.available || !items.length }),
             h('p', { className: 'wc-muted' }, tr("点击后使用当前界面所选模型翻译名称和说明，结果保存在本地缓存。同语默认保留原文，单项按钮可强制翻译。原始标识符和 Agent 调用保持不变。"))),
-          !workspace && h('label', { className: 'wc-default' }, h('input', { type: 'checkbox', checked: view.defaults[tab], disabled: busy || !!view.error,
-            onChange: event => action({ action: 'defaults', kind: tab, value: event.target.checked }) }), tab === 'skills' ? tr("新发现的 Skill 默认启用") : tr("已批准的 MCP 默认启用")),
-          h('input', { type: 'search', 'aria-label': tr("搜索能力"), placeholder: tr("搜索名称、说明或来源路径"), value: search, onChange: event => setSearch(event.target.value) }),
+          !workspace&&h(Toggle,{label:tab==='skills'?tr("新发现的 Skill 默认启用"):tr("已批准的 MCP 默认启用"),checked:view.defaults[tab],disabled:busy||!!view.error,onChange:value=>action({action:'defaults',kind:tab,value})}),
+          h(Input,{className:'wc-input',type:'search','aria-label':tr("搜索能力"),placeholder:tr("搜索名称、说明或来源路径"),value:search,onChange:event=>setSearch(event.target.value)}),
           h('p', { className: 'wc-muted' }, workspace ? tr("工作区：") + workspace : tr("全局规则将应用到未单独设置的工作区。")),
-          h('div', { className: 'wc-list' }, ...items.map(renderItem)),
+          h('div', {id:panelId,role:'tabpanel','aria-labelledby':tabId+'-'+tab,className: 'wc-list' }, ...items.map(renderItem)),
           !items.length && h('p', { className: 'wc-muted' }, search ? tr("没有匹配的能力。") : tab === 'mcp' ? tr("当前范围未发现 MCP。DSH 配置和工作区 .dsh/mcp.json 会自动发现；其他应用需打开上方扫描开关。") : tr("当前范围未发现 Skill。这里展示 DeepSeek 已注册的 Skill；其他应用需打开上方扫描开关。")),
           view.issues.length > 0 && h('details', null, h('summary', null, tr("发现过程中的问题 (") + view.issues.length + ')'), ...view.issues.map(item => h('p', { className: 'wc-source', key: item.source }, item.source + '：' + item.message))),
           !view.complete && h('p', { className: 'wc-muted' }, tr("部分 Skill 目录尚未完成扫描，请重新发现。")),
@@ -469,17 +584,24 @@ function installLocale(ctx) {
       const subscribeLocale = listener => ctx.locale.subscribe(listener), localeSnapshot = () => ctx.locale.getSnapshot();
       const subscribeWorkspaces = listener => ctx.workspaces.list.subscribe(listener);
       const getWorkspaceSnapshot = () => ctx.workspaces.list.getSnapshot();
+      const subscribeSession=listener=>ctx.uiSession.current.subscribe(listener),getSessionSnapshot=()=>ctx.uiSession.current.getSnapshot();
+      const emptyModel={current:null,routable:null};
       function getModelContext() {
         const sessionId = ctx.uiSession.current.getSnapshot()?.key;
         if (!sessionId) return {};
-        try { const selection = ctx.modelDirectories.directoryFor(sessionId).store.getSnapshot().current; return { sessionId, ...(selection ? { selection } : {}) }; }
+        try { const model = ctx.modelDirectories.directoryFor(sessionId).store.getSnapshot();if(model.routable===false)return {};const selection=model.current;return { sessionId, ...(selection ? { selection } : {}) }; }
         catch { return { sessionId }; }
       }
       function Page() {
+        const session=React.useSyncExternalStore(subscribeSession,getSessionSnapshot);
+        const directory=React.useMemo(()=>{try{return session?.key?ctx.modelDirectories.directoryFor(session.key):null;}catch{return null;}},[session?.key]);
+        const subscribeModel=React.useCallback(listener=>directory?.store.subscribe(listener)??(()=>{}),[directory]),getModelSnapshot=React.useCallback(()=>directory?.store.getSnapshot()??emptyModel,[directory]);
+        const model=React.useSyncExternalStore(subscribeModel,getModelSnapshot);
+        const modelContextKey=JSON.stringify([session?.key,model.current?.provider,model.current?.model,model.current?.reasoningEffort,model.routable===false]);
         const snapshot = React.useSyncExternalStore(subscribeWorkspaces, getWorkspaceSnapshot);
         const language = React.useSyncExternalStore(subscribeLanguage, languageSnapshot), locale = React.useSyncExternalStore(subscribeLocale, localeSnapshot);
         const saveLanguageTarget = async value => { if (!await languageForm.set('translationTargetLanguage', value.trim())) throw new Error(tr("翻译目标语言未保存，请刷新后重试。")); };
-        return h(CapabilitySettings, { getModelContext, registeredWorkspaces: snapshot.items, languageTarget: language.value?.translationTargetLanguage ?? '', saveLanguageTarget, uiLocale: locale.active });
+        return h(CapabilitySettings, { getModelContext, modelContextKey, modelFallback:model.routable===false,registeredWorkspaces: snapshot.items, languageTarget: language.value?.translationTargetLanguage ?? '', saveLanguageTarget, uiLocale: locale.active });
       }
       ctx.slots.inject('settings.section', () => ctx.slots.register({ name:'settings.section',locale:NS, id: 'workspace-capabilities', order: 20, label: () => tr("Skill 与 MCP") }, Page));
     }

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { stat } from 'node:fs/promises';
 import { canonical, allowed, PolicyError } from './policy.js';
 import { publicMcp } from './discovery.js';
@@ -16,6 +17,7 @@ async function body(request) {
 }
 export function createApi(ctx, store, discovery, runtime, { syncSources, translations } = {}) {
   async function view(path = '', options = {}) {
+    await translations?.prepareCache?.(options);
     const workspace = canonical(path), state = store.state;
     const observation = await runtime.originalSnapshot(workspace ? { cwd: workspace } : {});
     const rules = workspace ? state.workspaces[workspace] ?? { skills: {}, mcp: {} } : state.global;
@@ -36,6 +38,7 @@ export function createApi(ctx, store, discovery, runtime, { syncSources, transla
       item.translation = translations?.cached(targets.get('mcp:' + item.id), translation.model, options) ?? null;
       for (const tool of item.toolDetails) tool.translation = translations?.cached(targets.get('tool:' + tool.name), translation.model, options) ?? null;
     }
+    await translations?.flushIndex?.();
     return result;
   }
   async function action(data) {
@@ -81,15 +84,47 @@ export function createApi(ctx, store, discovery, runtime, { syncSources, transla
     else await runtime.changed();
     return view(workspace, data);
   }
-  async function translate(data, signal) {
+  async function selectedTargets(data) {
     if (!translations) throw new PolicyError('翻译服务尚未就绪。', 503);
     if (data.force !== undefined && typeof data.force !== 'boolean') throw new PolicyError('重新翻译参数无效。');
     if (!Array.isArray(data.keys) || data.keys.length < 1 || data.keys.length > 12 || data.keys.some(key => typeof key !== 'string') || new Set(data.keys).size !== data.keys.length) throw new PolicyError('每次请选择 1–12 条说明。');
     const current = await view(data.workspace ?? '', data), targets = translationTargets(current);
     const items = data.keys.map(key => targets.find(item => item.key === key));
     if (items.some(item => !item)) throw new PolicyError('该能力已不在当前发现范围，请刷新后重试。', 404);
-    const result = await translations.translate(items, { ...data, signal });
+    return items;
+  }
+  async function translate(data, signal, clear = false) {
+    const items = await selectedTargets(data);
+    const result = await translations[clear ? 'clear' : 'translate'](items, { ...data, signal });
     return { ...result, view: await view(data.workspace ?? '', data) };
+  }
+  // Short submission/poll requests leave the browser's HTTP/1 connections free.
+  // Model calls and the shared eight-worker limit remain in TranslationService.
+  const tasks = new Map();
+  async function submitTask(data, signal) {
+    const now = Date.now();
+    for (const [id, task] of tasks) if (now - task.touched > 10 * 60 * 1000) { task.controller.abort(); tasks.delete(id); }
+    if (tasks.size >= 1024) throw new PolicyError('翻译任务队列已满，请稍后重试。', 429);
+    const items = await selectedTargets(data); signal?.throwIfAborted();
+    if (tasks.size >= 1024) throw new PolicyError('翻译任务队列已满，请稍后重试。', 429);
+    const id = randomUUID(), controller = new AbortController(), task = { controller, touched: now, status: 'pending', options: data };
+    tasks.set(id, task);
+    // A task observes its own cancellation, not the short-lived submit connection.
+    Promise.resolve().then(() => translations.translate(items, { ...data, signal: controller.signal }))
+      .then(result => { task.result = result; task.status = 'done'; }, error => { task.error = error; task.status = 'error'; });
+    return { id };
+  }
+  async function taskState(id) {
+    const task = tasks.get(id);
+    if (!task) throw new PolicyError('翻译任务已过期，请重试。', 404);
+    task.touched = Date.now();
+    if (task.status === 'error') throw task.error;
+    if (task.status === 'pending') return { status: 'pending' };
+    return { status: 'done', result: { ...task.result, view: await view(task.options.workspace ?? '', task.options) } };
+  }
+  function cancelTask(id) {
+    const task = tasks.get(id); if (task) { task.controller.abort(); tasks.delete(id); }
+    return { cancelled: true };
   }
   async function handler(request, response) {
     const rejection = ctx.connection.requestRejection(request);
@@ -102,12 +137,15 @@ export function createApi(ctx, store, discovery, runtime, { syncSources, transla
       const options = { sessionId: url.searchParams.get('sessionId') ?? undefined, uiLocale: url.searchParams.get('uiLocale') ?? undefined, ...(url.searchParams.has('targetLanguage') ? { targetLanguage: url.searchParams.get('targetLanguage') } : {}),
         ...(url.searchParams.has('provider') ? { selection: { provider: url.searchParams.get('provider'), model: url.searchParams.get('model') } } : {}) };
       if (request.method === 'GET' && url.pathname === BASE + '/state') return send(response, 200, await view(url.searchParams.get('workspace') ?? '', options));
-      if (request.method !== 'POST' || ![BASE + '/action', BASE + '/translate'].includes(url.pathname)) return send(response, 404, { error: '接口不存在。' });
+      if (request.method === 'GET' && url.pathname === BASE + '/translation/tasks') return send(response, 200, await taskState(url.searchParams.get('id')));
+      if (request.method !== 'POST' || ![BASE + '/action', BASE + '/translate', BASE + '/translation/clear', BASE + '/translation/tasks', BASE + '/translation/cancel'].includes(url.pathname)) return send(response, 404, { error: '接口不存在。' });
       if (!/^application\/json(?:;|$)/i.test(request.headers['content-type'] ?? '')) throw new PolicyError('请求必须使用 application/json。', 415);
       const data = await body(request);
-      return send(response, 200, url.pathname === BASE + '/translate' ? await translate(data, controller.signal) : await action(data));
+      if (url.pathname === BASE + '/translation/tasks') return send(response, 200, await submitTask(data, controller.signal));
+      if (url.pathname === BASE + '/translation/cancel') return send(response, 200, cancelTask(data.id));
+      return send(response, 200, url.pathname === BASE + '/action' ? await action(data) : await translate(data, controller.signal, url.pathname.endsWith('/clear')));
     } catch (error) { return send(response, error.status ?? 500, { error: error instanceof PolicyError ? error.message : '操作未完成，请刷新后重试。' }); }
     finally { request.off('aborted', abort); response.off('close', abort); }
   }
-  return { view, action, translate, handler };
+  return { view, action, translate, clearTranslation: data => translate(data, undefined, true), submitTask, taskState, cancelTask, handler };
 }

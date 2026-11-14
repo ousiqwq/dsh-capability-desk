@@ -1,4 +1,14 @@
 export const zh = {
+  "翻译任务队列已满，请稍后重试。": "翻译任务队列已满，请稍后重试。",
+  "翻译任务已过期，请重试。": "翻译任务已过期，请重试。",
+  "翻译任务：{p0} 项处理中 · {p1} 项排队 · 已完成 {p2}/{p3}": "翻译任务：{p0} 项处理中 · {p1} 项排队 · 已完成 {p2}/{p3}",
+  "已去除翻译，恢复原文。": "已去除翻译，恢复原文。",
+  "已加入翻译队列": "已加入翻译队列",
+  "正在处理此项…": "正在处理此项…",
+  "去除该项目标语言的翻译缓存并恢复原文": "去除该项目标语言的翻译缓存并恢复原文",
+  "去除翻译 ": "去除翻译 ",
+
+  "（会话模型不可用，跟随 DSH 当前默认模型）": "（会话模型不可用，跟随 DSH 当前默认模型）",
   " · 当前使用工作区规则": " · 当前使用工作区规则",
   " · 当前继承全局": " · 当前继承全局",
   " 个工具": " 个工具",
@@ -128,6 +138,16 @@ export const zh = {
   "策略文件无法读取，Skill 和 MCP 已暂停。请恢复 policy.json 备份后重启服务。": "策略文件无法读取，Skill 和 MCP 已暂停。请恢复 policy.json 备份后重启服务。"
 };
 export const en = {
+  "翻译任务队列已满，请稍后重试。": "The translation queue is full. Try again later.",
+  "翻译任务已过期，请重试。": "The translation task has expired. Retry.",
+  "翻译任务：{p0} 项处理中 · {p1} 项排队 · 已完成 {p2}/{p3}": "Translation tasks: {p0} processing · {p1} queued · {p2}/{p3} done",
+  "已去除翻译，恢复原文。": "Translation removed; original text restored.",
+  "已加入翻译队列": "Queued for translation",
+  "正在处理此项…": "Processing this item…",
+  "去除该项目标语言的翻译缓存并恢复原文": "Remove this item’s cached translation for the target language and restore the original text",
+  "去除翻译 ": "Remove translation ",
+
+  "（会话模型不可用，跟随 DSH 当前默认模型）": " (session model unavailable; using the current DSH default)",
   " · 当前使用工作区规则": " · Using workspace rules",
   " · 当前继承全局": " · Inheriting global rules",
   " 个工具": " tools",
